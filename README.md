@@ -80,6 +80,7 @@ This extension includes PDF.js integration for enhanced PDF reading:
 ## 🔒 Privacy & Security
 
 - **Local Storage**: All data stored locally in Chrome
+- **Permissions**: This extension requires "tabs" permission to access the currently active tab for word saving functionality. This permission is necessary to read selected text from web pages when you press Ctrl+Shift+S. No browsing history or personal data is collected or transmitted.
 
 ## 📝 License
 

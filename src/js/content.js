@@ -1128,6 +1128,8 @@ function addPDFTextLayerSelectionListener() {
 }
 addPDFTextLayerSelectionListener(); 
 
+
+
 } // Close the else block from the beginning 
 
 

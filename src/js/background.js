@@ -22,87 +22,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
          }
 });
 
-// Auto-redirect PDF files (using built-in PDF viewer) - Safe version
-chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
-  console.log('BeforeNavigate event:', details.url, 'frameId:', details.frameId);
-  
-  // Check if PDF auto-redirect is enabled
-  try {
-    const { pdfAutoRedirect = true } = await chrome.storage.local.get('pdfAutoRedirect');
-    if (!pdfAutoRedirect) {
-      console.log('PDF auto-redirect is disabled');
-      return;
-    }
-  } catch (error) {
-    console.log('Error checking PDF auto-redirect setting, using default (enabled)');
-  }
-  
-      // Only process in main frame and check if it's a PDF file
-  const isPdfUrl = details.url.toLowerCase().endsWith('.pdf') || 
-                   details.url.includes('/pdf/') ||
-                   details.url.includes('application/pdf') ||
-                   details.url.includes('content-type=application/pdf');
-                   
-  if (details.frameId === 0 && isPdfUrl) {
-            console.log('PDF file detected:', details.url);
-    
-          // Don't redirect if already on viewer.html page (prevent infinite loop)
-    if (details.url.includes('viewer.html')) {
-              console.log('Already on viewer.html page, skipping redirect');
-      return;
-    }
-    
-          // Don't redirect extension internal URLs
-    if (details.url.startsWith(chrome.runtime.getURL(''))) {
-              console.log('Extension internal URL, skipping redirect');
-      return;
-    }
-    
-          // Don't redirect chrome:// or chrome-extension:// URLs
-    if (details.url.startsWith('chrome://') || details.url.startsWith('chrome-extension://')) {
-              console.log('Chrome internal URL, skipping redirect');
-      return;
-    }
-    
-          // Don't redirect data: URLs
-    if (details.url.startsWith('data:')) {
-              console.log('Data URL, skipping redirect');
-      return;
-    }
-    
-          // Don't redirect local files (use Chrome default behavior)
-    if (details.url.startsWith('file:///')) {
-              console.log('Local PDF file, not redirecting (using Chrome default behavior)');
-      return;
-    }
-    
-    if (details.url.includes('mozilla.github.io/pdf.js/web/viewer.html') && 
-        details.url.includes('file%3A%2F%2F%2F')) {
-      console.log('Mozilla viewer attempting to load local file - stopping redirect');
-      return;
-    }
-    
-    console.log('All conditions passed, attempting redirect');
-    
-    try {
-      const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(details.url);
-      console.log('PDF viewer URL (Mozilla):', pdfViewerUrl);
-      
-      setTimeout(() => {
-        chrome.tabs.update(details.tabId, { url: pdfViewerUrl }, (tab) => {
-          if (chrome.runtime.lastError) {
-            console.error('PDF redirection error:', chrome.runtime.lastError);
-          } else {
-            console.log('PDF file opened successfully in Mozilla viewer');
-          }
-        });
-      }, 100);
-      
-    } catch (error) {
-      console.error('PDF redirection error:', error);
-    }
-  }
-});
+// PDF redirection functionality removed for Chrome Web Store compliance
+// Users can manually open PDFs in the viewer if needed
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "save-word") {
