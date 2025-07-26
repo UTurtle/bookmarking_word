@@ -83,7 +83,7 @@ This extension includes PDF.js integration for enhanced PDF reading:
 
 ## 📝 License
 
-MIT License - see LICENSE file for details.
+Apache-2.0 License - see LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
