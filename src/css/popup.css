@@ -1,0 +1,396 @@
+/*
+ * Vocabulary Bookmarker - Popup Styles
+ * 
+ * This file contains all styles for the popup window of the Vocabulary Bookmarker extension.
+ * It includes styles for:
+ * - Popup layout and containers
+ * - Word list and items
+ * - Search functionality
+ * - Settings and controls
+ * - Responsive design
+ * 
+ * Version: 1.1.0
+ * Last Updated: 2025-07-26
+ */
+
+/* Popup Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Enable text selection */
+body, .word-item, .word-text, .word-definition, .word-meta, .stats, .popup-header h2 {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Disable text selection for buttons and interactive elements */
+.btn, .word-action-btn, .delete-btn, .edit-btn, .search-input {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    width: 400px;
+    min-height: 500px;
+    background: #f8f9fa;
+}
+
+.popup-container {
+    padding: 20px;
+}
+
+.popup-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.popup-header h2 {
+    font-size: 1.5rem;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.stats {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.search-section {
+    margin-bottom: 15px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.words-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+}
+
+.word-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f3f4;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.word-item:last-child {
+    border-bottom: none;
+}
+
+.word-item:hover {
+    background-color: #f8f9fa;
+}
+
+.word-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #667eea;
+}
+
+.word-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.word-text {
+    font-weight: 600;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.word-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.word-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: background-color 0.2s ease;
+}
+
+.word-action-btn:hover {
+    background-color: #e9ecef;
+}
+
+.delete-btn {
+    color: #dc3545;
+}
+
+.edit-btn {
+    color: #007bff;
+}
+
+.word-definition {
+    font-size: 0.85rem;
+    color: #6c757d;
+    line-height: 1.4;
+    margin-bottom: 5px;
+}
+
+.word-meta {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    display: flex;
+    justify-content: space-between;
+}
+
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.empty-state {
+    padding: 30px 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.shortcuts-info {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.shortcuts-info h4 {
+    font-size: 0.9rem;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.shortcuts-info ul {
+    list-style: none;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.shortcuts-info li {
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.shortcuts-info strong {
+    color: #495057;
+}
+
+.shortcut-settings {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.shortcut-settings label {
+    display: block;
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.shortcut-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    transition: border-color 0.3s ease;
+}
+
+.shortcut-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.shortcut-settings .btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    margin-right: 8px;
+}
+
+.shortcut-help {
+    margin-bottom: 10px;
+    color: #6c757d;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+/* Highlight Mode Toggle */
+.highlight-mode-settings {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.highlight-toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.highlight-toggle-label input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    margin-right: 10px;
+    transition: background 0.3s ease;
+}
+
+.toggle-slider:before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.highlight-toggle-label input[type="checkbox"]:checked + .toggle-slider {
+    background: #28a745;
+}
+
+.highlight-toggle-label input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-text {
+    font-weight: 600;
+    color: #333;
+}
+
+.highlight-help {
+    color: #6c757d;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+/* Scrollbar styling */
+.words-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.words-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.words-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.words-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* PDF Link Styles */
+.pdf-link {
+    display: inline-block;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.pdf-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.pdf-link:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+} 

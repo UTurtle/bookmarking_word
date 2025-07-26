@@ -1,0 +1,32 @@
+{
+  "name": "vocabulary-quiz-server",
+  "version": "1.0.0",
+  "description": "Server for vocabulary quiz leaderboard and scoring system",
+  "main": "src/js/build.js",
+  "scripts": {
+    "start": "node src/js/build.js",
+    "dev": "nodemon src/js/build.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node src/js/build.js",
+    "package": "npm run build && echo \"✅ Distribution package is ready!\""
+  },
+  "keywords": [
+    "vocabulary",
+    "quiz",
+    "leaderboard",
+    "education"
+  ],
+  "author": "Vocabulary Extension Team",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

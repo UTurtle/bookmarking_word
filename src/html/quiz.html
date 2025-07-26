@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Quiz</title>
+    <link rel="stylesheet" href="../css/quiz.css">
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1 id="quiz-title">🎯 Vocabulary Quiz</h1>
+            <button class="close-btn" id="close-quiz">&times;</button>
+        </div>
+        
+        <div class="quiz-progress">
+            Question <span id="current-question">1</span> of <span id="total-questions">5</span>
+        </div>
+        
+        <div class="quiz-question">
+            <h2 id="question-text">Loading question...</h2>
+            <div id="quiz-options" class="quiz-options">
+                <!-- Quiz options will be inserted here -->
+            </div>
+        </div>
+        
+        <div id="quiz-result" class="quiz-result" style="display: none;">
+            <div id="result-message"></div>
+            <div id="score-display"></div>
+        </div>
+        
+        <div class="quiz-navigation">
+            <button id="next-question" class="btn btn-primary" style="display: none;">Next Question</button>
+        </div>
+    </div>
+    
+    <script src="../js/quiz.js"></script>
+</body>
+</html> 

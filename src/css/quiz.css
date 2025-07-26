@@ -1,0 +1,269 @@
+/*
+ * Vocabulary Bookmarker - Quiz Styles
+ * 
+ * This file contains all styles for the quiz functionality of the Vocabulary Bookmarker extension.
+ * It includes styles for:
+ * - Quiz container and layout
+ * - Question and answer display
+ * - Progress indicators
+ * - Results and scoring
+ * - Dark mode support
+ * - Responsive design
+ * 
+ * Version: 1.1.0
+ * Last Updated: 2025-07-26
+ */
+
+/* Quiz Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e0e0;
+}
+
+.quiz-container {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    min-height: 500px;
+    position: relative;
+}
+
+body.dark-mode .quiz-container {
+    background: #2d3748;
+    color: #e0e0e0;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #eee;
+}
+
+body.dark-mode .quiz-header {
+    border-bottom-color: #4a5568;
+}
+
+.quiz-header h1 {
+    font-size: 2rem;
+    color: #667eea;
+    margin: 0;
+}
+
+body.dark-mode .quiz-header h1 {
+    color: #90cdf4;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+body.dark-mode .close-btn {
+    color: #a0aec0;
+}
+
+body.dark-mode .close-btn:hover {
+    background: #4a5568;
+    color: #e0e0e0;
+}
+
+.quiz-progress {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+body.dark-mode .quiz-progress {
+    background: #4a5568;
+    color: #e0e0e0;
+}
+
+.quiz-question h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.5rem;
+    color: #333;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+body.dark-mode .quiz-question h2 {
+    color: #e0e0e0;
+}
+
+.quiz-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.quiz-option {
+    padding: 20px;
+    border: 3px solid #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    background: white;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 500;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.4;
+}
+
+body.dark-mode .quiz-option {
+    background: #4a5568;
+    border-color: #718096;
+    color: #e0e0e0;
+}
+
+.quiz-option:hover {
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.quiz-option.selected {
+    border-color: #667eea;
+    background: #e3f2fd;
+}
+
+body.dark-mode .quiz-option.selected {
+    background: #2a4365;
+}
+
+.quiz-option.correct {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.quiz-option.incorrect {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    opacity: 0.8;
+}
+
+.quiz-result {
+    text-align: center;
+    margin: 30px 0;
+}
+
+#result-message {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+#score-display {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+body.dark-mode #score-display {
+    color: #a0aec0;
+}
+
+.quiz-navigation {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+@media (max-width: 768px) {
+    .quiz-container {
+        padding: 20px;
+        margin: 20px;
+    }
+    
+    .quiz-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .quiz-options {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .quiz-option {
+        padding: 15px;
+        font-size: 1rem;
+        min-height: 60px;
+    }
+    
+    .quiz-question h2 {
+        font-size: 1.3rem;
+    }
+} 

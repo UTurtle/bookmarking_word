@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Board</title>
+    <link rel="stylesheet" href="../css/newtab.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-top">
+                <h1>📚 Vocabulary Board</h1>
+                <div class="header-controls">
+                    <button id="animation-toggle" class="animation-btn" title="Toggle animations (Ctrl+A)">
+                        <span class="animation-icon">🎬</span>
+                    </button>
+                    <button id="dark-mode-toggle" class="dark-mode-btn" title="Toggle dark mode (Ctrl+D)">
+                        <span class="dark-mode-icon">🌙</span>
+                    </button>
+                    <button id="settings" class="settings-btn" title="Settings">
+                        <span class="settings-icon">⚙️</span>
+                    </button>
+                </div>
+            </div>
+            <div class="stats">
+                <span id="total-words">0 words</span>
+                <span id="today-reviewed">0 pinned</span>
+                <span id="weekly-score">Weekly Score: 0</span>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="controls-top">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search words..." class="search-input">
+                    <button id="clear-search" class="clear-search-btn">✕</button>
+                </div>
+                <div class="view-controls">
+                    <button id="board-view" class="btn btn-view active" data-view="board">📋 Board View</button>
+                    <button id="table-view" class="btn btn-view" data-view="table">📊 Table View</button>
+                </div>
+                <div class="control-buttons">
+                    <button id="refresh-words" class="btn btn-primary">🔄 Refresh</button>
+                    <button id="add-sample" class="btn btn-secondary">➕ Add Sample</button>
+                    <button id="export-words" class="btn btn-outline">📤 Export</button>
+                    <button id="import-words" class="btn btn-outline">📥 Import</button>
+                    <button id="toggle-all-definitions" class="btn btn-outline">🙈 Hide All Definitions</button>
+                    <button id="toggle-all-words" class="btn btn-outline">🙈 Hide All Words</button>
+                    <button id="pin-all" class="btn btn-outline">📌 Pin All</button>
+                    <button id="unpin-all" class="btn btn-outline">📌 Unpin All</button>
+                    <button id="show-archived" class="btn btn-outline">📦 Archived Words</button>
+                    <button id="update-examples" class="btn btn-outline">💬 Update Examples</button>
+                    <button id="start-quiz" class="btn btn-quiz">🎯 Start Quiz</button>
+                    <button id="status" class="btn btn-status">📊 Status</button>
+                </div>
+            </div>
+            
+            <!-- Text selection guide -->
+            <div class="text-selection-guide">
+                <p>💡 <strong>Tip:</strong> Select any text on this page to save it to your vocabulary! You can also use <strong>Ctrl+Shift+S</strong> to save selected text.</p>
+            </div>
+            
+            <div class="sort-controls">
+                <label for="sort-select">Sort by:</label>
+                <select id="sort-select" class="sort-select">
+                    <option value="date">Date Added</option>
+                    <option value="alphabetical">Alphabetical</option>
+                </select>
+            </div>
+            
+            <div id="words-container">
+                <div id="words-grid" class="words-grid active">
+                    <div class="loading">Loading vocabulary...</div>
+                </div>
+                <div id="words-table" class="words-table">
+                    <div class="loading">Loading vocabulary...</div>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <span id="progress-text">0% pinned</span>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <button id="manage-words" class="btn btn-outline">Manage Words</button>
+            <button id="clear-all" class="btn btn-danger">Clear All</button>
+            <div class="api-credits">
+                <p>Thanks to: <a href="https://dictionaryapi.dev/" target="_blank">Dictionary API</a> for definitions, 
+                <a href="https://www.datamuse.com/api/" target="_blank">Datamuse API</a> for word relationships, 
+                and <a href="https://mozilla.github.io/pdf.js/" target="_blank">Mozilla PDF.js</a> for PDF viewing</p>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Quiz Type Selection Modal -->
+    <div id="quiz-type-modal" class="modal">
+        <div class="modal-content quiz-type-modal">
+            <div class="modal-header">
+                <h2>🎯 Select Quiz Type</h2>
+                <button class="modal-close" id="close-quiz-type">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="quiz-type-options">
+                    <div class="quiz-type-option" data-type="definition-to-word">
+                        <div class="quiz-type-icon">📝</div>
+                        <h3>Definition to Word</h3>
+                        <p>Choose the correct word for each definition</p>
+                        <div class="quiz-type-preview">
+                            <strong>Example:</strong><br>
+                            "A feeling of great happiness"<br>
+                            → Choose: <span class="correct-answer">Joy</span>
+                        </div>
+                    </div>
+                    <div class="quiz-type-option" data-type="word-to-definition">
+                        <div class="quiz-type-icon">🔤</div>
+                        <h3>Word to Definition</h3>
+                        <p>Choose the correct definition for each word</p>
+                        <div class="quiz-type-preview">
+                            <strong>Example:</strong><br>
+                            "Serendipity"<br>
+                            → Choose: <span class="correct-answer">Finding something good without looking for it</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quiz now opens in separate window -->
+    
+    <!-- Score Modal -->
+    <div id="score-modal" class="modal">
+        <div class="modal-content score-modal">
+            <div class="modal-header">
+                <h2>🏆 Quiz Results</h2>
+                <button class="modal-close" id="close-score">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="score-summary">
+                    <div class="final-score">
+                        <span id="final-score-text">0/5</span>
+                    </div>
+                    <div class="score-details" id="score-details">
+                        <p>Correct: <span id="correct-count">0</span></p>
+                        <p>Incorrect: <span id="incorrect-count">0</span></p>
+                        <p>Weekly Score: <span id="weekly-score-display">0</span></p>
+                    </div>
+                </div>
+                <div class="score-actions">
+                    <button id="retry-quiz" class="btn btn-primary">Retry Quiz</button>
+                    <button id="share-score" class="btn btn-outline">Share Score</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Modal -->
+    <div id="status-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Daily Status</h2>
+                <button class="modal-close" id="close-status">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="status-content">
+                    <div class="status-section">
+                        <h3>🔥 Daily Streak</h3>
+                        <div class="streak-display">
+                            <span id="current-streak">0</span> days
+                        </div>
+                        <p class="streak-info">Keep the streak going!</p>
+                    </div>
+                    <div class="status-section">
+                        <h3>📈 Today's Progress</h3>
+                        <div class="progress-stats">
+                            <p>Words reviewed: <span id="today-reviewed-count">0</span></p>
+                            <p>Quizzes taken: <span id="today-quizzes-count">0</span></p>
+                            <p>Total score: <span id="today-total-score">0</span></p>
+                        </div>
+                    </div>
+                    <div class="status-section">
+                        <h3>🎯 Best Streak</h3>
+                        <div class="best-streak">
+                            <span id="best-streak">0</span> days
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="modal-close" id="close-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Profile</h3>
+                    <div class="setting-item">
+                        <label for="user-name-input">Display Name:</label>
+                        <input type="text" id="user-name-input" placeholder="Enter your name">
+                        <button id="generate-random-name" class="btn-secondary">🎲 Generate Random</button>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="dark-mode-toggle"> Dark Mode
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="animations-toggle"> Enable Animations
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Quiz</h3>
+                    <div class="setting-item">
+                        <label for="streak-bonus-toggle">
+                            <input type="checkbox" id="streak-bonus-toggle" checked> Enable Streak Bonus (+2 points per day)
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Card Interaction</h3>
+                    <div class="setting-item">
+                        <label for="card-click-toggle">
+                            <input type="checkbox" id="card-click-toggle" checked> Enable card click to toggle word/definition visibility
+                        </label>
+                        <p class="setting-description">When enabled, clicking on a word card will hide/show the word or definition. Disable this if you want to copy text without accidentally hiding content.</p>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>PDF Settings</h3>
+                    <div class="setting-item">
+                        <label for="pdf-auto-redirect-toggle">
+                            <input type="checkbox" id="pdf-auto-redirect-toggle" checked> Auto-redirect PDF files to PDF.js viewer
+                        </label>
+                        <p class="setting-description">When enabled, PDF files will automatically open in the PDF.js viewer for better text selection and word saving capabilities.</p>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button id="save-settings" class="btn-primary">Save Settings</button>
+                    <button id="reset-settings" class="btn-secondary">Reset to Default</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-file-input" accept=".csv" style="display: none;">
+    
+    <script src="../js/newtab.js"></script>
+</body>
+</html> 

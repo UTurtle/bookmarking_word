@@ -1,0 +1,75 @@
+name: Build and Package Extension
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build extension
+      run: npm run build
+      
+    - name: Package extension
+      run: npm run package
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: vocabulary-bookmarker-extension
+        path: build/
+        
+    - name: Create Release
+      if: github.event_name == 'release'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## What's Changed
+          
+          ### New Features
+          - Enhanced quiz system with multiple types
+          - Online search integration
+          - Improved UI/UX with dark mode
+          - Smart text selection on new tab page
+          
+          ### Bug Fixes
+          - Fixed text selection issues
+          - Improved word deletion functionality
+          - Enhanced responsive design
+          
+          ### Technical Improvements
+          - Updated to Manifest V3
+          - Optimized performance
+          - Better error handling
+          
+          ## Installation
+          
+          Download the extension from the `build/` folder and load it in Chrome:
+          1. Open `chrome://extensions/`
+          2. Enable "Developer mode"
+          3. Click "Load unpacked" and select the extension folder
+          
+        draft: false
+        prerelease: false 
