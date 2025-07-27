@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vocabulary Learning Note",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Save words while browsing and learn with interactive quizzes. Features progress tracking and smart word management.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
