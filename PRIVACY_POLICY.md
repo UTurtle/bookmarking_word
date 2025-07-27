@@ -20,7 +20,7 @@
 ### 1.3 Information We Transmit to External APIs
 - **Selected Words Only**: When you select and save a word, only that specific word is sent to external dictionary APIs
 - **Word Validation**: Before transmission, we validate that the selected text is a valid English word (letters, hyphens, apostrophes only, no numbers or special characters)
-- **Sensitive Information Filtering**: We automatically filter out text that contains sensitive patterns (passwords, tokens, credit card numbers, etc.)
+- **Invalid Text Filtering**: Text that does not meet English word criteria is automatically rejected and not transmitted
 - **No Context**: We do not send surrounding text, page content, or any other context
 - **Purpose**: Words are sent solely to retrieve definitions and example sentences for vocabulary learning
 
@@ -40,13 +40,13 @@
 
 ### 3.1 Local Storage
 - All word data is stored locally in the user's browser
-- No data is transmitted to servers
+- No data is transmitted to servers except for dictionary API calls
 
 ### 3.2 External API Usage
 - **Dictionary API**: Used only for word definition lookup
 - **Datamuse API**: Used only for related words and synonym search
 - **Word Validation**: All selected text is validated as valid English words before API transmission
-- **Sensitive Data Protection**: Text containing sensitive patterns is automatically blocked from transmission
+- **Invalid Text Rejection**: Text that does not meet English word criteria is automatically rejected
 - **Word Transmission**: Only validated English words are transmitted during API calls
 - **No Additional Data**: No surrounding text, page content, or any other user data is transmitted
 - **API Purpose**: Valid words are sent exclusively to retrieve definitions and examples for vocabulary learning
@@ -79,7 +79,7 @@
 - **scripting**: Execute content scripts for word selection functionality
 - **host_permissions**: 
   - Access to all HTTPS websites (`https://*/*`) to enable word saving functionality on any webpage users visit
-  - Access to dictionary APIs (api.dictionaryapi.dev, api.datamuse.com) to fetch word definitions, relate words, opposite words, and examples
+  - Access to dictionary APIs (api.dictionaryapi.dev, api.datamuse.com) to fetch word definitions, related words, synonyms, antonyms, and examples
 
 ### 6.2 Optional Permissions
 - **tabs**: New tab page replacement functionality
@@ -110,29 +110,3 @@ This Privacy Policy may be changed without prior notice. Users will be notified 
 ## 9. Contact
 
 For questions about this Privacy Policy, please contact us through the GitHub repository Issues.
-
----
-
-**Confirmation**: This extension complies with Chrome Web Store Developer Program Policies and handles user data safely and transparently. 
-
-## Chrome Web Store Data Collection Declaration
-
-This extension collects the following user data categories as required by Chrome Web Store policies:
-
-### Data Categories Collected:
-- **Website Content**: Selected text/words from web pages for vocabulary saving (with validation to ensure only valid English words are processed)
-- **User Activity**: Text selection, mouse clicks, keyboard shortcuts for word saving functionality  
-- **Web History**: URL information for PDF redirection and word saving context
-
-### Data Categories NOT Collected:
-- Personally identifiable information
-- Health information  
-- Financial and payment information
-- Authentication information
-- Personal communications
-- Location information
-
-### Data Usage Confirmation:
-- We do not sell or transfer user data to third parties except for approved use cases (dictionary API lookup)
-- We do not use or transmit user data for purposes unrelated to the extension's dedicated purpose (vocabulary learning)
-- We do not use or transmit user data for credit assessment or loans 
