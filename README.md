@@ -20,6 +20,7 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 - **New Tab Override**: Customizable new tab page with vocabulary board
 - **Hide All Words/Definitions**: Global toggle modes for focused learning
 - **Multiple Word Selection**: Select and save multiple words at once when Highlight mode is enabled
+- **Today Voca System**: Daily vocabulary learning with SRS algorithm, interactive quizzes, and progress tracking
 
 ### Learning Features
 - **Today Voca**: Daily vocabulary learning system with SRS (Spaced Repetition System)
@@ -74,7 +75,6 @@ This extension includes PDF.js integration for enhanced PDF reading:
 - `R`: Refresh vocabulary board
 - `Ctrl+A`: Toggle animations
 - `Ctrl+Q`: Start quiz
-- `T`: Start Today Voca (when on main board)
 
 ## 🔧 Configuration
 
