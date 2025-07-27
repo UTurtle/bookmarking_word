@@ -7,17 +7,19 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 ## 🌟 Features
 
 ### Core Features
-- **Word Bookmarking**: Save words while browsing with `Ctrl+Shift+S`
+- **Word Save to Note**: Save words while browsing with `Ctrl+Shift+S`
 - **Automatic Definitions**: Fetch definitions from Dictionary API
-- **Interactive Quizzes**: 5-question quizzes with 4 multiple choice options
+- **Interactive Card**: Toggle hide/show card word and define
 - **Quiz Progress Tracking**: Daily streaks and statistics
 - **Pin/Unpin Words**: Mark important words for quick access
 - **Archive System**: Archive words you've mastered
-- **Add Examples**: Add example sentences to words
 - **Related/Opposite Words**: Discover synonyms using Datamuse API
 - **CSV Export/Import**: Export vocabulary to CSV and import from CSV files
 - **PDF Integration**: Save words from PDF documents using PDF.js viewer
 - **View Modes**: Board view and table view
+- **New Tab Override**: Customizable new tab page with vocabulary board
+- **Hide All Words/Definitions**: Global toggle modes for focused learning
+- **Multiple Word Selection**: Select and save multiple words at once when Highlight mode is enabled
 
 ## 🚀 Installation
 
@@ -81,6 +83,22 @@ This extension includes PDF.js integration for enhanced PDF reading:
 
 - **Local Storage**: All data stored locally in Chrome
 - **Permissions**: This extension requires "tabs" permission to access the currently active tab for word saving functionality. This permission is necessary to read selected text from web pages when you press Ctrl+Shift+S. No browsing history or personal data is collected or transmitted.
+
+## 🔮 Future Work
+
+### Smart Vocabulary Management
+- **Automatic Word Categorization**: AI-powered classification of words into different categories (academic, casual, technical, etc.)
+- **Dynamic Word Sets**: Create multiple vocabulary books for different purposes
+- **Daily Word Rotation**: Show N different words each day from various categories
+- **Spaced Repetition System**: Implement forgetting curve-based review scheduling
+- **Adaptive Learning**: Adjust difficulty based on user performance
+
+### Enhanced Learning Features
+- **Pronunciation Guide**: Audio pronunciation for saved words
+- **Context Examples**: Save words with their original context
+- **Learning Analytics**: Detailed progress reports and learning insights
+- **Social Features**: Share vocabulary lists with other learners
+- **Offline Mode**: Full functionality without internet connection
 
 ## 📝 License
 

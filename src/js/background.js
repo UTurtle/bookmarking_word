@@ -16,108 +16,40 @@ const redirectedTabs = new Set();
 
 // Handle new tab override dynamically
 chrome.tabs.onCreated.addListener(async (tab) => {
-    console.log('New tab created:', tab.url, 'pendingUrl:', tab.pendingUrl);
+    // Check if this is a new tab (either by pendingUrl or by checking if it's empty)
+    const isNewTab = (tab.pendingUrl === 'chrome://newtab/' || 
+                     tab.pendingUrl === 'about:newtab' ||
+                     !tab.pendingUrl);
     
-    // If this tab has a specific URL from the start, don't redirect it
-    if (tab.pendingUrl && 
-        tab.pendingUrl !== 'chrome://newtab/' && 
-        tab.pendingUrl !== 'about:newtab' &&
-        !tab.pendingUrl.startsWith('chrome://newtab')) {
-        console.log('Tab has specific URL from start, not redirecting:', tab.pendingUrl);
-        redirectedTabs.add(tab.id);
-        return;
-    }
-    
-    // Only redirect if this is a truly empty new tab
-    const isEmptyNewTab = (!tab.url || 
-                          tab.url === 'chrome://newtab/' || 
-                          tab.url === 'about:newtab' ||
-                          tab.url === 'chrome://newtab') &&
-                         (!tab.pendingUrl || 
-                          tab.pendingUrl === 'chrome://newtab/' || 
-                          tab.pendingUrl === 'about:newtab');
-    
-    if (isEmptyNewTab) {
-        // Use a longer delay for slower computers, but also check if tab was marked as redirected
+    if (isNewTab) {
+        // Add a small delay to ensure the tab is fully created
         setTimeout(async () => {
             try {
-                // Check if tab was already marked as redirected during the delay
-                if (redirectedTabs.has(tab.id)) {
-                    console.log('Tab was marked as redirected during delay, skipping');
-                    return;
+                const result = await chrome.storage.local.get('newtabOverride');
+                const newtabOverride = result.newtabOverride !== false; // Default to true
+                
+                if (newtabOverride) {
+                    // If override is enabled, redirect to vocabulary board
+                    const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
+                    chrome.tabs.update(tab.id, { url: newtabUrl });
                 }
-                
-                // Get the updated tab info
-                const updatedTab = await chrome.tabs.get(tab.id);
-                console.log('Updated tab info after delay:', updatedTab.url, 'pendingUrl:', updatedTab.pendingUrl);
-                
-                // Double-check if tab was marked as redirected
-                if (redirectedTabs.has(updatedTab.id)) {
-                    console.log('Tab already marked as redirected, skipping');
-                    return;
-                }
-                
-                // Only redirect if this is still a truly empty new tab
-                const stillEmptyNewTab = (!updatedTab.url || 
-                                         updatedTab.url === 'chrome://newtab/' || 
-                                         updatedTab.url === 'about:newtab' ||
-                                         updatedTab.url === 'chrome://newtab') &&
-                                        (!updatedTab.pendingUrl || 
-                                         updatedTab.pendingUrl === 'chrome://newtab/' || 
-                                         updatedTab.pendingUrl === 'about:newtab');
-                
-                if (stillEmptyNewTab) {
-                    const { newtabOverride = true } = await chrome.storage.local.get('newtabOverride');
-                    console.log('Newtab override setting:', newtabOverride);
-                    
-                    if (newtabOverride) {
-                        // If override is enabled, redirect to vocabulary board
-                        console.log('Newtab override enabled, redirecting to vocabulary board');
-                        const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
-                        chrome.tabs.update(updatedTab.id, { url: newtabUrl });
-                    } else {
-                        console.log('Newtab override disabled, keeping default new tab');
-                    }
-                } else {
-                    console.log('Tab is no longer empty, not redirecting');
-                }
+                // If override is disabled, let it go to the default new tab page
             } catch (error) {
                 console.error('Error checking newtab override setting:', error);
             }
-        }, 500); // Increased delay to 500ms for slower computers
-    } else {
-        console.log('Not an empty new tab, not redirecting');
+        }, 20);
     }
 });
 
-// Handle tab updates to catch URLs that are loaded after tab creation
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // Only process if the URL changed and it's not already marked as redirected
-    if (changeInfo.url && !redirectedTabs.has(tabId)) {
-        console.log('Tab URL updated:', tabId, changeInfo.url);
-        
-        // If the URL is not a newtab URL, mark this tab as redirected
-        if (changeInfo.url !== 'chrome://newtab/' && 
-            changeInfo.url !== 'about:newtab' &&
-            !changeInfo.url.startsWith('chrome://newtab')) {
-            console.log('Tab got specific URL, marking as redirected:', changeInfo.url);
-            redirectedTabs.add(tabId);
-        }
-    }
-});
+
 
 // Handle navigation events to catch URLs before they load
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
-    // Only process main frame navigation
     if (details.frameId === 0) {
-        console.log('BeforeNavigate event for tab:', details.tabId, 'URL:', details.url);
-        
-        // If this is not a newtab URL and not our extension URL, mark the tab as redirected
         if (details.url !== 'chrome://newtab/' && 
             details.url !== 'about:newtab' &&
             !details.url.startsWith('chrome://newtab') &&
             !details.url.startsWith(chrome.runtime.getURL(''))) {
-            console.log('Tab is navigating to specific URL, marking as redirected:', details.url);
             redirectedTabs.add(details.tabId);
         }
     }
@@ -130,8 +62,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 // Listen for messages from newtab page (kept for potential future use)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // Handle any future message types here
-    console.log('Received message:', request);
     sendResponse({ success: true });
 });
 
@@ -148,17 +78,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // Auto-redirect PDF files to PDF.js viewer (optional feature)
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
-  console.log('BeforeNavigate event:', details.url, 'frameId:', details.frameId);
-  
-  // Check if PDF auto-redirect is enabled
   try {
     const { pdfAutoRedirect = false } = await chrome.storage.local.get('pdfAutoRedirect');
     if (!pdfAutoRedirect) {
-      console.log('PDF auto-redirect is disabled');
       return;
     }
   } catch (error) {
-    console.log('Error checking PDF auto-redirect setting, using default (disabled)');
     return;
   }
   
