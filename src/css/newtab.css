@@ -1934,7 +1934,7 @@ body.dark-mode .invalid-word-notice p {
     margin-top: 10px;
     text-align: center;
     font-size: 0.85rem;
-    color: #666;
+    color: #ffffff;
     opacity: 0.8;
 }
 
@@ -1944,7 +1944,7 @@ body.dark-mode .invalid-word-notice p {
 }
 
 .api-credits a {
-    color: #667eea;
+    color: #9cabff;
     text-decoration: none;
     transition: color 0.2s;
 }
