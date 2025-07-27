@@ -157,8 +157,7 @@ For complete privacy information, see [Privacy Policy](privacy-policy.md).
 ### Enhanced Learning Features
 - **Pronunciation Guide**: Audio pronunciation for saved words
 - **Context Examples**: Save words with their original context
-- **Social Features**: Share vocabulary lists with other learners
-- **Offline Mode**: Full functionality without internet connection
+- **Pronunciation Practice**: Learn accurate pronunciation and intonation
 
 ## 📝 License
 
