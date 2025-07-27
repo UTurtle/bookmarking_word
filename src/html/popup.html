@@ -333,6 +333,26 @@
             </div>
             
             <div class="setting-item">
+                <div class="setting-label">Today Voca Priority</div>
+                <div class="toggle-container">
+                    <div id="today-voca-toggle" class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span>Show Today Voca on new tab (if enabled)</span>
+                </div>
+                <div class="help-text">When enabled, new tabs will show Today Voca instead of the vocabulary board. Today Voca helps you review words systematically.</div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Today Voca Words Count</div>
+                <input type="number" id="today-voca-words-count" min="1" max="50" value="5" class="shortcut-input">
+                <div class="help-text">Number of words to include in each Today Voca session (1-50)</div>
+                <div style="margin-top: 10px;">
+                    <button id="save-words-count-btn" class="btn btn-primary">Save Words Count</button>
+                </div>
+            </div>
+            
+            <div class="setting-item">
                 <div class="setting-label">Custom Save Shortcut</div>
                 <input type="text" id="custom-shortcut" placeholder="e.g., Ctrl+Alt+S" class="shortcut-input">
                 <div class="help-text">Default: Ctrl+Shift+S | Examples: Ctrl+Alt+S</div>

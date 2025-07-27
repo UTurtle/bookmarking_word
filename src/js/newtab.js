@@ -188,6 +188,20 @@ class VocabularyBoard {
             this.updateExistingWordsWithExamples();
         });
         
+        // Today Voca button
+        const startTodayVocaBtn = document.getElementById('start-today-voca');
+        if (startTodayVocaBtn) startTodayVocaBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.startTodayVoca();
+        });
+        
+        // Today Voca icon button
+        const startTodayVocaIconBtn = document.getElementById('start-today-voca-icon');
+        if (startTodayVocaIconBtn) startTodayVocaIconBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.startTodayVoca();
+        });
+        
         if (this.manageWordsBtn) this.manageWordsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.openPopup();
@@ -230,7 +244,7 @@ class VocabularyBoard {
         
         // Icon button events (for collapsed sidebar)
         const iconButtons = [
-            { id: 'refresh-words-icon', action: () => this.refreshWords() },
+            { id: 'refresh-words-icon', action: () => this.loadVocabulary() },
             { id: 'export-words-icon', action: () => this.exportWords() },
             { id: 'import-words-icon', action: () => this.importWords() },
             { id: 'toggle-all-definitions-icon', action: () => this.toggleAllDefinitions() },
@@ -719,6 +733,30 @@ class VocabularyBoard {
                     return 0; // Keep pinned order
                 });
                 break;
+            case 'wrong-count':
+                sortedVocabulary.sort((a, b) => {
+                    const aPinned = a.pinned || false;
+                    const bPinned = b.pinned || false;
+                    if (aPinned === bPinned) {
+                        const aWrongCount = a.wrongCount || 0;
+                        const bWrongCount = b.wrongCount || 0;
+                        return bWrongCount - aWrongCount; // 높은 틀린 횟수 우선
+                    }
+                    return 0; // Keep pinned order
+                });
+                break;
+            case 'learning-priority':
+                sortedVocabulary.sort((a, b) => {
+                    const aPinned = a.pinned || false;
+                    const bPinned = b.pinned || false;
+                    if (aPinned === bPinned) {
+                        const aPriority = a.learningPriority || 0;
+                        const bPriority = b.learningPriority || 0;
+                        return bPriority - aPriority; // 높은 우선순위 우선
+                    }
+                    return 0; // Keep pinned order
+                });
+                break;
             case 'date':
             default:
                 sortedVocabulary.sort((a, b) => {
@@ -767,6 +805,7 @@ class VocabularyBoard {
                 <div class="table-cell">Definition</div>
                 <div class="table-cell">Example</div>
                 <div class="table-cell">Date Added</div>
+                <div class="table-cell">Wrong/Correct Count</div>
                 <div class="table-cell">Actions</div>
             </div>
         `;
@@ -793,6 +832,11 @@ class VocabularyBoard {
                     </div>
                     <div class="table-cell">
                         <div class="date-added ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">${dateAdded}</div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="wrong-count ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
+                            ${word.wrongCount || 0}/${word.correctCount || 0}
+                        </div>
                     </div>
                     <div class="table-cell">
                         <div class="actions ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
@@ -824,6 +868,13 @@ class VocabularyBoard {
             hiddenClasses.push('word-meta hidden');
         }
         
+        // 틀린 횟수 정보 표시
+        const wrongCount = word.wrongCount || 0;
+        const totalAttempts = word.totalAttempts || 0;
+        const correctCount = word.correctCount || 0;
+        const wrongCountDisplay = wrongCount > 0 ? `<span class="wrong-count" title="틀린 횟수: ${wrongCount}">❌${wrongCount}</span>` : '';
+        const statsDisplay = totalAttempts > 0 ? `<span class="stats-info" title="정답: ${correctCount}, 시도: ${totalAttempts}">📊${correctCount}/${totalAttempts}</span>` : '';
+        
         return `
             <div class="word-card ${pinnedClass}" data-word="${word.word}">
                 <button class="archive-btn" title="Archive word">📦</button>
@@ -844,6 +895,8 @@ class VocabularyBoard {
                 </div>
                 <div class="word-meta ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
                     <span class="date-added">${dateAdded}</span>
+                    ${wrongCountDisplay}
+                    ${statsDisplay}
                 </div>
             </div>
         `;
@@ -1439,6 +1492,15 @@ class VocabularyBoard {
         };
         
         chrome.windows.onRemoved.addListener(handleWindowRemoved);
+    }
+    
+    startTodayVoca() {
+        // Today Voca 창 열기
+        const todayVocaUrl = chrome.runtime.getURL('src/html/today-voca.html');
+        chrome.tabs.create({
+            url: todayVocaUrl,
+            active: true
+        });
     }
     
     // Quiz questions are now generated in the separate quiz window

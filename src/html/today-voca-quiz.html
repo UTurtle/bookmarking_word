@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today Voca Quiz - Vocabulary Learning Note</title>
+    <link rel="stylesheet" href="../css/today-voca-quiz.css">
+</head>
+<body class="today-voca-quiz-body">
+    <div class="today-voca-quiz-container" id="today-voca-quiz-container">
+        <header class="quiz-header">
+            <div class="header-left">
+                <button id="back-to-today-voca" class="back-btn" title="Back to Today Voca">←</button>
+                <h1 class="quiz-title">🎯 Today Voca Quiz</h1>
+            </div>
+            <div class="header-right">
+                <div class="quiz-progress-info">
+                    <span id="current-question-num">1</span> / <span id="total-questions">10</span>
+                </div>
+                <div class="quiz-score">
+                    <span id="current-score">0</span> pts
+                </div>
+            </div>
+        </header>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="quiz-progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="quiz-question-container" id="quiz-question-container">
+            <div class="question-card">
+                <div class="question-text" id="question-text">
+                    <h2>Loading question...</h2>
+                </div>
+                
+                <div class="question-options" id="question-options">
+                </div>
+                
+                <div class="question-navigation">
+                    <button class="next-question-btn" id="next-question-btn" style="display: none;">
+                        Next Question →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-result-container hidden" id="quiz-result-container">
+            <div class="result-card">
+                <div class="result-header">
+                    <h2>🎉 Quiz Complete!</h2>
+                    <p>You have completed the Today Voca quiz.</p>
+                </div>
+                
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Final Score:</span>
+                        <span class="stat-value" id="final-score">0</span> points
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Correct:</span>
+                        <span class="stat-value correct-count" id="correct-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Incorrect:</span>
+                        <span class="stat-value wrong-count" id="wrong-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Time Spent:</span>
+                        <span class="stat-value" id="quiz-time-spent">0 min</span>
+                    </div>
+                </div>
+                
+                <div class="result-actions">
+                    <button class="retry-quiz-btn" id="retry-quiz-btn">🔄 Try Again</button>
+                    <button class="back-to-board-btn" id="back-to-board-btn">📋 Back to Board</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Preparing quiz...</p>
+    </div>
+
+    <script src="../js/srs-system.js"></script>
+    <script src="../js/today-voca-quiz.js"></script>
+</body>
+</html> 

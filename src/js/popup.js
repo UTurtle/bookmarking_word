@@ -31,10 +31,15 @@ class VocabularyPopup {
 
         this.streakBonusToggle = document.getElementById('streak-bonus-toggle');
         this.newtabOverrideToggle = document.getElementById('newtab-override-toggle');
+        this.todayVocaToggle = document.getElementById('today-voca-toggle');
         this.openMainBtn = document.getElementById('open-main-btn');
         this.customShortcutInput = document.getElementById('custom-shortcut');
         this.saveShortcutBtn = document.getElementById('save-shortcut-btn');
         this.resetShortcutBtn = document.getElementById('reset-shortcut-btn');
+        
+        // Today Voca settings
+        this.todayVocaWordsCountInput = document.getElementById('today-voca-words-count');
+        this.saveWordsCountBtn = document.getElementById('save-words-count-btn');
     }
     
     bindEvents() {
@@ -59,9 +64,13 @@ class VocabularyPopup {
 
         this.streakBonusToggle.addEventListener('click', () => this.toggleStreakBonus());
         this.newtabOverrideToggle.addEventListener('click', () => this.toggleNewtabOverride());
+        this.todayVocaToggle.addEventListener('click', () => this.toggleTodayVoca());
         this.openMainBtn.addEventListener('click', () => this.openMainBoard());
         this.saveShortcutBtn.addEventListener('click', () => this.saveCustomShortcut());
         this.resetShortcutBtn.addEventListener('click', () => this.resetCustomShortcut());
+        
+        // Today Voca settings
+        this.saveWordsCountBtn.addEventListener('click', () => this.saveTodayVocaWordsCount());
         
         // Shortcut input handling
         this.customShortcutInput.addEventListener('input', (e) => {
@@ -92,7 +101,9 @@ class VocabularyPopup {
 
                 'streakBonusEnabled',
                 'newtabOverride',
-                'customShortcut'
+                'todayVocaPriority',
+                'customShortcut',
+                'todayVocaSettings'
             ]);
             
             // Load highlight mode
@@ -145,9 +156,22 @@ class VocabularyPopup {
                 this.newtabOverrideToggle.classList.remove('active');
             }
             
+            // Load Today Voca priority setting (default to false)
+            const todayVocaPriority = result.todayVocaPriority || false; // Default to false
+            if (todayVocaPriority) {
+                this.todayVocaToggle.classList.add('active');
+            } else {
+                this.todayVocaToggle.classList.remove('active');
+            }
+            
             // Load custom shortcut
             const customShortcut = result.customShortcut || '';
             this.customShortcutInput.value = customShortcut;
+            
+            // Load Today Voca settings
+            const todayVocaSettings = result.todayVocaSettings || {};
+            const wordsPerDay = todayVocaSettings.wordsPerDay || 10;
+            this.todayVocaWordsCountInput.value = wordsPerDay;
             
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -376,6 +400,29 @@ class VocabularyPopup {
         }
     }
     
+    async toggleTodayVoca() {
+        try {
+            const isActive = this.todayVocaToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            // Update UI immediately
+            this.todayVocaToggle.classList.toggle('active');
+            
+            // Save to storage
+            await chrome.storage.local.set({ todayVocaPriority: newState });
+            
+            // Show success message
+            if (newState) {
+                this.showSuccess('Today Voca priority enabled - new tabs will show Today Voca');
+            } else {
+                this.showSuccess('Today Voca priority disabled - new tabs will show vocabulary board');
+            }
+        } catch (error) {
+            console.error('Error toggling Today Voca priority:', error);
+            this.showError('Failed to update Today Voca priority setting');
+        }
+    }
+    
     async openMainBoard() {
         try {
             const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
@@ -410,6 +457,27 @@ class VocabularyPopup {
         } catch (error) {
             console.error('Error resetting shortcut:', error);
             this.showError('Failed to reset shortcut');
+        }
+    }
+    
+    async saveTodayVocaWordsCount() {
+        try {
+            const wordsCount = parseInt(this.todayVocaWordsCountInput.value);
+            
+            if (isNaN(wordsCount) || wordsCount < 1 || wordsCount > 50) {
+                this.showError('Please enter a valid number between 1 and 50');
+                return;
+            }
+            
+            const todayVocaSettings = {
+                wordsPerDay: wordsCount
+            };
+            
+            await chrome.storage.local.set({ todayVocaSettings });
+            this.showSuccess(`Today Voca words count saved: ${wordsCount}`);
+        } catch (error) {
+            console.error('Error saving Today Voca words count:', error);
+            this.showError('Failed to save words count');
         }
     }
     

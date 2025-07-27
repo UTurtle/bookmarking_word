@@ -33,6 +33,7 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+Feature_Work.md
 
 # PDF files (large)
 *.pdf

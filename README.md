@@ -21,6 +21,13 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 - **Hide All Words/Definitions**: Global toggle modes for focused learning
 - **Multiple Word Selection**: Select and save multiple words at once when Highlight mode is enabled
 
+### Learning Features
+- **Today Voca**: Daily vocabulary learning system with SRS (Spaced Repetition System)
+- **SRS Algorithm**: SuperMemo SM-2 algorithm for optimal learning intervals
+- **Today Voca Quiz**: Interactive quiz system for Today Voca words
+- **Learning History**: Track daily learning progress and completion history
+- **Smart Word Selection**: Intelligent word selection based on learning priority and review schedule
+
 ## 🚀 Installation
 
 1. Clone or download this repository
@@ -40,6 +47,12 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 2. Choose quiz type (Definition to Word or Word to Definition)
 3. Answer 5 questions
 4. View your score and progress
+
+### Today Voca System
+1. Click "📚 Today Voca" button on the main board
+2. Learn 5 words daily with SRS algorithm
+3. Complete word learning and take quiz
+4. Track your learning history and progress
 
 ### Import/Export
 - **Export**: Click "📤 Export" to download vocabulary as CSV
@@ -61,6 +74,7 @@ This extension includes PDF.js integration for enhanced PDF reading:
 - `R`: Refresh vocabulary board
 - `Ctrl+A`: Toggle animations
 - `Ctrl+Q`: Start quiz
+- `T`: Start Today Voca (when on main board)
 
 ## 🔧 Configuration
 
@@ -77,6 +91,7 @@ This extension includes PDF.js integration for enhanced PDF reading:
 - **Storage**: Chrome Storage API
 - **APIs**: Dictionary API, Datamuse API
 - **PDF Viewer**: Mozilla PDF.js integration
+- **SRS System**: SuperMemo SM-2 algorithm implementation
 - **Build**: Node.js with archiver
 
 ## 🔒 Privacy & Security
@@ -89,14 +104,11 @@ This extension includes PDF.js integration for enhanced PDF reading:
 ### Smart Vocabulary Management
 - **Automatic Word Categorization**: AI-powered classification of words into different categories (academic, casual, technical, etc.)
 - **Dynamic Word Sets**: Create multiple vocabulary books for different purposes
-- **Daily Word Rotation**: Show N different words each day from various categories
-- **Spaced Repetition System**: Implement forgetting curve-based review scheduling
 - **Adaptive Learning**: Adjust difficulty based on user performance
 
 ### Enhanced Learning Features
 - **Pronunciation Guide**: Audio pronunciation for saved words
 - **Context Examples**: Save words with their original context
-- **Learning Analytics**: Detailed progress reports and learning insights
 - **Social Features**: Share vocabulary lists with other learners
 - **Offline Mode**: Full functionality without internet connection
 

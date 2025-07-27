@@ -240,6 +240,15 @@ body.compact-layout {
     background: linear-gradient(135deg, #c0392b, #a93226);
 }
 
+.icon-btn.today-voca-icon {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    border-color: #ff9800;
+}
+
+.icon-btn.today-voca-icon:hover {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+}
+
 .icon-btn.status-icon {
     background: linear-gradient(135deg, #3498db, #2980b9);
     border-color: #2980b9;
@@ -1226,6 +1235,10 @@ body.dark-mode .table-cell {
 
 /* Actions column */
 .table-cell:nth-child(6) {
+    width: 100px;
+}
+
+.table-cell:nth-child(7) {
     width: 200px;
 }
 
@@ -1289,6 +1302,17 @@ body.dark-mode .table-cell .example {
 
 body.dark-mode .table-cell .date-added {
     color: #a0aec0;
+}
+
+.table-cell .wrong-count {
+    color: #e74c3c;
+    font-weight: bold;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+body.dark-mode .table-cell .wrong-count {
+    color: #ff6b6b;
 }
 
 /* Actions 버튼 스타일 조정 */
@@ -1710,6 +1734,36 @@ body.dark-mode .opposite-btn:hover {
 
 .date-added {
     color: #666;
+}
+
+/* 틀린 횟수 표시 스타일 */
+.wrong-count {
+    color: #e74c3c;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-left: 8px;
+    background: rgba(231, 76, 60, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.stats-info {
+    color: #3498db;
+    font-size: 0.8em;
+    margin-left: 8px;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+body.dark-mode .wrong-count {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.2);
+}
+
+body.dark-mode .stats-info {
+    color: #74b9ff;
+    background: rgba(116, 185, 255, 0.2);
 }
 
 .loading {

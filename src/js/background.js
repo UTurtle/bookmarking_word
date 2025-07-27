@@ -16,38 +16,90 @@ const redirectedTabs = new Set();
 
 // Handle new tab override dynamically
 chrome.tabs.onCreated.addListener(async (tab) => {
-    // Check if this is a new tab (either by pendingUrl or by checking if it's empty)
+    console.log('Tab created:', {
+        id: tab.id,
+        pendingUrl: tab.pendingUrl,
+        url: tab.url,
+        status: tab.status
+    });
+    
+    // Only redirect if this is actually a new tab (not a navigation to existing tab)
     const isNewTab = (tab.pendingUrl === 'chrome://newtab/' || 
                      tab.pendingUrl === 'about:newtab' ||
-                     !tab.pendingUrl);
+                     tab.pendingUrl === undefined ||
+                     tab.pendingUrl === null);
     
-    if (isNewTab) {
+    console.log('Is new tab:', isNewTab);
+    
+    // Additional check: make sure this is not a navigation to an existing URL
+    // Don't redirect if it's about:blank
+    // Only redirect if the tab is actually empty or going to new tab
+    const shouldRedirect = isNewTab && 
+        (tab.url === 'chrome://newtab/' || tab.url === 'about:newtab' || !tab.url) && 
+        tab.pendingUrl !== 'about:blank' && 
+        tab.url !== 'about:blank' &&
+        tab.status === 'loading';
+    
+    console.log('Should redirect:', shouldRedirect, {
+        isNewTab,
+        hasNoUrl: !tab.url,
+        isNewTabUrl: tab.url === 'chrome://newtab/' || tab.url === 'about:newtab',
+        isNotAboutBlank: tab.pendingUrl !== 'about:blank' && tab.url !== 'about:blank',
+        isLoading: tab.status === 'loading'
+    });
+    
+    if (shouldRedirect) {
         // Add a small delay to ensure the tab is fully created
         setTimeout(async () => {
             try {
-                const result = await chrome.storage.local.get('newtabOverride');
+                const result = await chrome.storage.local.get(['newtabOverride', 'todayVocaPriority']);
                 const newtabOverride = result.newtabOverride !== false; // Default to true
+                const todayVocaPriority = result.todayVocaPriority || false; // Default to false
                 
                 if (newtabOverride) {
-                    // If override is enabled, redirect to vocabulary board
-                    const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
-                    chrome.tabs.update(tab.id, { url: newtabUrl });
+                    let targetUrl;
+                    
+                    if (todayVocaPriority) {
+                        const today = new Date().toDateString();
+                        
+                        try {
+                            const todayVocaData = await chrome.storage.local.get(['todayVocaData']);
+                            const lastTodayVocaDate = todayVocaData.todayVocaData?.date;
+                            
+                            if (lastTodayVocaDate === today && todayVocaData.todayVocaData?.completed) {
+                                targetUrl = chrome.runtime.getURL('src/html/newtab.html');
+                            } else {
+                                targetUrl = chrome.runtime.getURL('src/html/today-voca.html');
+                            }
+                        } catch (error) {
+                            console.error('Error checking Today Voca status:', error);
+                            targetUrl = chrome.runtime.getURL('src/html/today-voca.html');
+                        }
+                    } else {
+                        targetUrl = chrome.runtime.getURL('src/html/newtab.html');
+                    }
+                    
+                    chrome.tabs.update(tab.id, { url: targetUrl });
                 }
                 // If override is disabled, let it go to the default new tab page
             } catch (error) {
                 console.error('Error checking newtab override setting:', error);
             }
-        }, 20);
+        }, 100);
     }
 });
 
 
 
 // Handle navigation events to catch URLs before they load
+// This is only used for tracking redirected tabs, not for redirecting
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     if (details.frameId === 0) {
+        // Only track if this is a navigation to a non-extension URL
+        // Don't track about:blank navigations
         if (details.url !== 'chrome://newtab/' && 
             details.url !== 'about:newtab' &&
+            details.url !== 'about:blank' &&
             !details.url.startsWith('chrome://newtab') &&
             !details.url.startsWith(chrome.runtime.getURL(''))) {
             redirectedTabs.add(details.tabId);
@@ -58,6 +110,26 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 // Clean up redirected tabs when they are closed
 chrome.tabs.onRemoved.addListener((tabId) => {
     redirectedTabs.delete(tabId);
+});
+
+// Add tab update listener for debugging
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    console.log('Tab updated:', {
+        tabId,
+        changeInfo,
+        url: tab.url,
+        status: tab.status,
+        pendingUrl: tab.pendingUrl
+    });
+    
+    // Check if this is an unwanted redirect
+    if (changeInfo.url && 
+        !changeInfo.url.startsWith(chrome.runtime.getURL('')) &&
+        changeInfo.url !== 'chrome://newtab/' &&
+        changeInfo.url !== 'about:newtab' &&
+        changeInfo.url !== 'about:blank') {
+        console.log('External URL navigation detected:', changeInfo.url);
+    }
 });
 
 // Listen for messages from newtab page (kept for potential future use)
@@ -257,7 +329,8 @@ async function saveWordToStorage(word, definition, url) {
         definition: definition,
         url: url,
         dateAdded: new Date().toISOString(),
-        reviewCount: 0
+        reviewCount: 0,
+        todayVocaCount: 0
       });
     } else {
       // Update existing word

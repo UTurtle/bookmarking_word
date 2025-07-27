@@ -41,7 +41,14 @@
     {
       "resources": [
         "src/assets/images/*",
-        "locale/*"
+        "locale/*",
+        "src/html/today-voca.html",
+        "src/css/today-voca.css",
+        "src/js/today-voca.js",
+        "src/html/today-voca-quiz.html",
+        "src/css/today-voca-quiz.css",
+        "src/js/today-voca-quiz.js",
+        "src/js/srs-system.js"
       ],
       "matches": ["<all_urls>"]
     }

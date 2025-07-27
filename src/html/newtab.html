@@ -22,6 +22,7 @@
                 <button id="unpin-all-icon" class="icon-btn" title="Unpin All">📍</button>
                 <button id="show-archived-icon" class="icon-btn" title="Archived Words">📦</button>
                 <button id="update-examples-icon" class="icon-btn" title="Update Examples">💬</button>
+                <button id="start-today-voca-icon" class="icon-btn today-voca-icon" title="Today Voca">📚</button>
                 <button id="start-quiz-icon" class="icon-btn quiz-icon" title="Start Quiz">🎯</button>
                 <button id="status-icon" class="icon-btn status-icon" title="Status">📊</button>
             </div>
@@ -60,6 +61,7 @@
                 
                 <div class="menu-section">
                     <h4>🎯 Learning</h4>
+                    <button id="start-today-voca" class="menu-btn today-voca-btn">📚 Today Voca</button>
                     <button id="start-quiz" class="menu-btn quiz-btn">🎯 Start Quiz</button>
                     <button id="status" class="menu-btn status-btn">📊 Status</button>
                 </div>
@@ -116,13 +118,15 @@
 
             </div>
             
-            <div class="sort-controls">
-                <label for="sort-select">Sort by:</label>
-                <select id="sort-select" class="sort-select">
-                    <option value="date">Date Added</option>
-                    <option value="alphabetical">Alphabetical</option>
-                </select>
-            </div>
+                    <div class="sort-controls">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select" class="sort-select">
+                <option value="date">Date Added</option>
+                <option value="alphabetical">Alphabetical</option>
+                <option value="wrong-count">Wrong Count (High to Low)</option>
+                <option value="learning-priority">Learning Priority</option>
+            </select>
+        </div>
             
             <div id="words-container">
                 <div id="words-grid" class="words-grid active">

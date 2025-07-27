@@ -301,6 +301,9 @@ class QuizWindow {
                     this.currentQuiz.correct++;
                     this.currentQuiz.score += 10;
                     console.log('Correct answer! +10 points');
+                    
+                    // 틀린 횟수 카운트 업데이트 (정답인 경우)
+                    this.updateWordStats(question.correctWord, true);
                 } else {
                     selectedOption.classList.add('incorrect');
                     this.currentQuiz.incorrect++;
@@ -313,6 +316,9 @@ class QuizWindow {
                     }
                     
                     console.log('Wrong answer. Correct was:', question.options[question.correctIndex].word, '-10 points');
+                    
+                    // 틀린 횟수 카운트 업데이트 (오답인 경우)
+                    this.updateWordStats(question.correctWord, false);
                 }
             }
         }
@@ -368,6 +374,55 @@ class QuizWindow {
         }
         
         console.log('Quiz results displayed');
+    }
+    
+    async updateWordStats(word, isCorrect) {
+        try {
+            // 단어장에서 해당 단어 찾기
+            const wordIndex = this.vocabulary.findIndex(w => w.word === word);
+            if (wordIndex !== -1) {
+                const wordData = this.vocabulary[wordIndex];
+                
+                // 기존 통계 데이터가 없으면 초기화
+                if (!wordData.totalAttempts) wordData.totalAttempts = 0;
+                if (!wordData.correctCount) wordData.correctCount = 0;
+                if (!wordData.wrongCount) wordData.wrongCount = 0;
+                
+                // 통계 업데이트
+                wordData.totalAttempts++;
+                
+                if (isCorrect) {
+                    wordData.correctCount++;
+                } else {
+                    wordData.wrongCount++;
+                    wordData.lastWrongDate = new Date().toISOString();
+                }
+                
+                // 학습 우선순위 계산 (틀린 횟수와 시간 기반)
+                wordData.learningPriority = this.calculateLearningPriority(wordData);
+                
+                // 단어장 업데이트
+                this.vocabulary[wordIndex] = wordData;
+                await chrome.storage.local.set({ vocabulary: this.vocabulary });
+                
+                console.log(`Updated stats for "${word}": attempts=${wordData.totalAttempts}, correct=${wordData.correctCount}, wrong=${wordData.wrongCount}`);
+            }
+        } catch (error) {
+            console.error('Error updating word stats:', error);
+        }
+    }
+    
+    calculateLearningPriority(wordData) {
+        // 틀린 횟수가 많을수록, 최근에 틀렸을수록 높은 우선순위
+        const wrongWeight = wordData.wrongCount * 0.3;
+        const timeWeight = 0;
+        
+        if (wordData.lastWrongDate) {
+            const daysSinceLastWrong = (new Date() - new Date(wordData.lastWrongDate)) / (1000 * 60 * 60 * 24);
+            timeWeight = Math.max(0, 7 - daysSinceLastWrong) * 0.1; // 최대 7일
+        }
+        
+        return Math.min(1.0, wrongWeight + timeWeight);
     }
     
     async updateQuizStatistics(finalScore) {
