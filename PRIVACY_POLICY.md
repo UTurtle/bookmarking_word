@@ -1,135 +1,98 @@
-# Privacy Policy for Vocabulary Learning Note
+# Privacy Policy
 
-## Overview
+**Last Updated**: January 27, 2025
 
-Vocabulary Learning Note is a browser extension designed to help users learn and manage vocabulary while browsing the web. **This extension operates entirely on your device (client-side only) and does not transmit any data to external servers.** This privacy policy explains how we handle your information and what data is stored locally on your device.
+## 1. Information We Collect
 
-## Information We Handle
+### 1.1 Automatically Collected Information
+- **Web History**: URL information is processed for PDF file redirection functionality
+- **User Activity**: Text selection and right-click menu usage information is processed
+- **Website Content**: Selected text is read to save words
 
-### Data You Create
-- **Vocabulary words**: Words you select and save while browsing
-- **Word definitions**: Definitions retrieved from external APIs
-- **Learning progress**: Your study history, quiz results, and learning statistics
-- **Settings**: Your preferences for the extension (layout, animations, etc.)
+### 1.2 Information We Do Not Collect
+- Personally identifiable information (name, address, email, etc.)
+- Health information
+- Financial and payment information
+- Authentication information (passwords, login information)
+- Personal communications
+- Location information
 
-### Important Note
-- **No server collection**: We do NOT collect, upload, or transmit any of your data to our servers
-- **Local storage only**: All data is stored locally in your browser using Chrome's storage API
-- **No analytics**: We do not track or analyze your usage patterns
+## 2. How We Use Information
 
-## How We Use Your Information
+### 2.1 Core Features
+- **Word Saving**: Save selected text to vocabulary list
+- **Word Definition Lookup**: Provide word definitions and examples through external APIs
+- **Learning Progress Tracking**: Manage review schedules using SRS algorithm
+- **Quiz Features**: Learning quizzes using saved words
 
-### Core Functionality
-- **Word saving**: Store words you select while browsing websites
-- **Definition lookup**: Retrieve word definitions from external dictionary APIs
-- **Learning features**: Track your progress in Today Voca and quiz sessions
-- **New tab customization**: Replace your browser's new tab with a learning dashboard
+### 2.2 Additional Features
+- **New Tab Page Replacement**: Customized new tab page for vocabulary learning
+- **PDF Redirection**: Enhanced text selection through PDF.js viewer
 
-### External Services
-We use the following external APIs to enhance functionality:
-- **Dictionary API** (`api.dictionaryapi.dev`): Retrieve word definitions
-- **Datamuse API** (`api.datamuse.com`): Get word-related information and suggestions
+## 3. Information Storage and Transmission
 
-## Data Storage and Security
+### 3.1 Local Storage
+- All word data is stored locally in the user's browser
+- No data is transmitted to servers
 
-### Local Storage
-- All your vocabulary data is stored locally in your browser
-- We do not upload or transmit your personal data to our servers
-- Data persists until you uninstall the extension or clear browser data
+### 3.2 External API Usage
+- **Dictionary API**: Used only for word definition lookup
+- **Datamuse API**: Used only for related words and synonym search
+- Only the specific word is transmitted during API calls; no other user data is transmitted
 
-### Data Protection
-- Your data is protected by your browser's built-in security measures
-- We do not have access to your stored vocabulary or learning progress
-- No personal information is shared with third parties
-- **Complete privacy**: Since we don't collect data, we cannot access, sell, or misuse your information
+## 4. Data Security
 
-## Permissions We Request
+### 4.1 Encryption
+- All external API communications are encrypted via HTTPS
+- Local storage data uses Chrome's secure storage
 
-### Required Permissions
-- **`storage`**: Save and retrieve your vocabulary data and settings
-- **`activeTab`**: Access text you select on web pages
-- **`scripting`**: Inject scripts to enable word selection and saving
-- **`tabs`**: Manage browser tabs for new tab page replacement
-- **`webNavigation`**: Track page navigation for proper functionality
-- **`contextMenus`**: Create right-click menus for PDF file handling
+### 4.2 Access Restrictions
+- Developers or third parties cannot access user data
+- All data processing occurs only within the user's browser
 
-### Host Permissions
-- **`https://api.dictionaryapi.dev/*`**: Access dictionary API for word definitions
-- **`https://api.datamuse.com/*`**: Access word suggestion API
+## 5. User Rights
 
-## Features and Data Usage
+### 5.1 Data Access and Modification
+- Saved words can be viewed, modified, or deleted at any time
+- Data can be exported in CSV format
 
-### Word Saving
-- Select text on any webpage to save words
-- Automatic definition lookup from external APIs
-- Store words with context (URL, date, definition)
+### 5.2 Data Deletion
+- All local data is automatically deleted when the extension is removed
+- Individual words can be deleted at any time
 
-### Learning System
-- **Today Voca**: Daily vocabulary learning with progress tracking
-- **Quiz System**: Interactive quizzes using your saved words
-- **SRS System**: Spaced repetition learning algorithm
-- **Progress tracking**: Monitor learning statistics and completion rates
+## 6. Permission Usage
 
-### New Tab Dashboard
-- Replace browser's default new tab with learning interface
-- Display saved words, search functionality, and learning tools
-- Customizable layout and animation settings
+### 6.1 Required Permissions
+- **storage**: Store word data
+- **activeTab**: Read selected text from current tab
+- **scripting**: Execute content scripts
 
-### Highlight Mode
-- Highlight multiple words on web pages for batch saving
-- PDF file support for text selection
-- Visual indicators for selected text
+### 6.2 Optional Permissions
+- **tabs**: New tab page replacement functionality
+- **webNavigation**: PDF auto-redirect functionality
+- **contextMenus**: PDF link right-click menu
 
-### Data Management
-- Export/import vocabulary data
-- Archive and pin important words
-- Remove unwanted words from your collection
+## 7. Limited Use Requirements
 
-## Third-Party Services
+### 7.1 Permitted Uses
+- Provide vocabulary learning and related features
+- Word definition lookup at user request
+- Learning progress tracking and quiz functionality
 
-### External APIs
-- **Dictionary API** (`api.dictionaryapi.dev`): Provides word definitions and meanings
-- **Datamuse API** (`api.datamuse.com`): Offers word suggestions and related terms
+### 7.2 Prohibited Uses
+- Serve personalized advertisements
+- Sell user data to third parties
+- Allow humans to read user data
+- Use for credit assessment or loan purposes
 
-**Important**: These APIs only receive the specific words you look up. They do not receive any other personal information or browsing data. We recommend reviewing their privacy policies for complete information.
+## 8. Policy Changes
 
-## Data Retention
+This Privacy Policy may be changed without prior notice. Users will be notified of significant changes through extension updates.
 
-- Your vocabulary data is stored locally and persists until you:
-  - Uninstall the extension
-  - Clear your browser data
-  - Manually delete words through the extension interface
+## 9. Contact
 
-## Your Control Over Data
-
-Since all data is stored locally on your device, you have complete control:
-- Access all your stored vocabulary data through the extension
-- Export your data for backup or transfer
-- Delete individual words or clear all data
-- Disable the extension at any time
-- Uninstall the extension to remove all stored data
-
-## Children's Privacy
-
-This extension is not intended for children under 13. Since we do not collect or store any personal information on our servers, no personal data from children is processed by us.
-
-## Changes to This Policy
-
-We may update this privacy policy from time to time. We will notify users of any material changes by updating the version number and date at the top of this policy.
-
-## Contact Information
-
-If you have questions about this privacy policy or our data practices, please contact us through the extension's support channels.
-
-## Compliance
-
-This extension complies with:
-- Chrome Web Store Developer Program Policies
-- General Data Protection Regulation (GDPR) principles (by not collecting personal data)
-- California Consumer Privacy Act (CCPA) requirements (by not collecting personal data)
-
-**Privacy-First Design**: This extension is designed with privacy as a core principle - your data stays on your device.
+For questions about this Privacy Policy, please contact us through the GitHub repository Issues.
 
 ---
 
-**Note**: This privacy policy applies to the Vocabulary Learning Note browser extension. By using this extension, you agree to the local storage and handling of information in accordance with this policy. 
+**Confirmation**: This extension complies with Chrome Web Store Developer Program Policies and handles user data safely and transparently. 
