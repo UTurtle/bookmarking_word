@@ -28,11 +28,12 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
         "https://*/*"
       ],
       "exclude_matches": [
-        "https://chrome.google.com/*"
+        "https://chrome.google.com/*",
+        "https://chrome-extension://*/*",
+        "chrome://*/*"
       ],
       "js": ["src/js/content.js"],
       "css": ["src/css/content.css"],
@@ -52,7 +53,7 @@
         "src/js/today-voca-quiz.js",
         "src/js/srs-system.js"
       ],
-      "matches": ["<all_urls>"]
+      "matches": ["https://*/*"]
     }
   ],
   "action": {
