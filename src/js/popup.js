@@ -358,7 +358,12 @@ class VocabularyPopup {
             const isActive = this.newtabOverrideToggle.classList.contains('active');
             const newState = !isActive;
             
+            console.log('Toggling newtab override from', isActive, 'to', newState);
+            
+            // Update UI immediately
             this.newtabOverrideToggle.classList.toggle('active');
+            
+            // Save to storage
             await chrome.storage.local.set({ newtabOverride: newState });
             
             // Show success message
@@ -367,6 +372,8 @@ class VocabularyPopup {
             } else {
                 this.showSuccess('New tab override disabled - new tabs will show default page');
             }
+            
+            console.log('Newtab override toggled successfully:', newState);
         } catch (error) {
             console.error('Error toggling newtab override:', error);
             this.showError('Failed to update newtab override setting');
