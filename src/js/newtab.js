@@ -2072,6 +2072,47 @@ class VocabularyBoard {
             });
         }
         
+        // Add archived words event listeners
+        if (type === 'archived') {
+            // Individual restore buttons
+            const restoreButtons = modal.querySelectorAll('.restore-btn');
+            restoreButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const word = button.dataset.word;
+                    this.restoreArchivedWord(word);
+                });
+            });
+            
+            // Individual delete buttons
+            const deleteButtons = modal.querySelectorAll('.delete-archived-btn');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const word = button.dataset.word;
+                    this.deleteArchivedWord(word);
+                });
+            });
+            
+            // Restore all button
+            const restoreAllBtn = modal.querySelector('.restore-all-btn');
+            if (restoreAllBtn) {
+                restoreAllBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.restoreAllArchivedWords();
+                });
+            }
+            
+            // Delete all button
+            const deleteAllBtn = modal.querySelector('.delete-all-archived-btn');
+            if (deleteAllBtn) {
+                deleteAllBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.deleteAllArchivedWords();
+                });
+            }
+        }
+        
         // Add to page
         document.body.appendChild(modal);
         
@@ -2991,6 +3032,196 @@ class VocabularyBoard {
         } catch (error) {
             console.error('Error showing archived words:', error);
             this.showError('Failed to load archived words');
+        }
+    }
+    
+    async restoreArchivedWord(wordText) {
+        try {
+            console.log('Restoring archived word:', wordText);
+            
+            // Get current archived words
+            const { archivedWords = [] } = await chrome.storage.local.get('archivedWords');
+            const { vocabulary = [] } = await chrome.storage.local.get('vocabulary');
+            
+            // Find the word in archived words
+            const archivedWordIndex = archivedWords.findIndex(w => w.word === wordText);
+            if (archivedWordIndex === -1) {
+                this.showError('Word not found in archived words');
+                return;
+            }
+            
+            const archivedWord = archivedWords[archivedWordIndex];
+            
+            // Check if word already exists in vocabulary
+            const existingWord = vocabulary.find(w => w.word.toLowerCase() === wordText.toLowerCase());
+            if (existingWord) {
+                this.showError(`"${wordText}" already exists in vocabulary`);
+                return;
+            }
+            
+            // Remove from archived words
+            archivedWords.splice(archivedWordIndex, 1);
+            
+            // Add back to vocabulary (remove archivedAt property)
+            const { archivedAt, ...wordToRestore } = archivedWord;
+            vocabulary.push(wordToRestore);
+            
+            // Save both arrays
+            await chrome.storage.local.set({ 
+                archivedWords: archivedWords,
+                vocabulary: vocabulary 
+            });
+            
+            // Update local state
+            this.vocabulary = vocabulary;
+            
+            // Show success message
+            this.showSuccess(`"${wordText}" restored successfully`);
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.word-modal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Refresh the display
+            this.renderWordsGrid();
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('Error restoring archived word:', error);
+            this.showError('Failed to restore word');
+        }
+    }
+    
+    async deleteArchivedWord(wordText) {
+        try {
+            console.log('Deleting archived word:', wordText);
+            
+            // Get current archived words
+            const { archivedWords = [] } = await chrome.storage.local.get('archivedWords');
+            
+            // Find and remove the word
+            const archivedWordIndex = archivedWords.findIndex(w => w.word === wordText);
+            if (archivedWordIndex === -1) {
+                this.showError('Word not found in archived words');
+                return;
+            }
+            
+            archivedWords.splice(archivedWordIndex, 1);
+            
+            // Save updated archived words
+            await chrome.storage.local.set({ archivedWords: archivedWords });
+            
+            // Show success message
+            this.showSuccess(`"${wordText}" deleted permanently`);
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.word-modal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Refresh the display
+            this.renderWordsGrid();
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('Error deleting archived word:', error);
+            this.showError('Failed to delete word');
+        }
+    }
+    
+    async restoreAllArchivedWords() {
+        try {
+            console.log('Restoring all archived words');
+            
+            // Get current archived words and vocabulary
+            const { archivedWords = [] } = await chrome.storage.local.get('archivedWords');
+            const { vocabulary = [] } = await chrome.storage.local.get('vocabulary');
+            
+            if (archivedWords.length === 0) {
+                this.showError('No archived words to restore');
+                return;
+            }
+            
+            let restoredCount = 0;
+            let skippedCount = 0;
+            
+            // Process each archived word
+            for (const archivedWord of archivedWords) {
+                // Check if word already exists in vocabulary
+                const existingWord = vocabulary.find(w => w.word.toLowerCase() === archivedWord.word.toLowerCase());
+                if (existingWord) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Remove archivedAt property and add to vocabulary
+                const { archivedAt, ...wordToRestore } = archivedWord;
+                vocabulary.push(wordToRestore);
+                restoredCount++;
+            }
+            
+            // Save updated vocabulary and clear archived words
+            await chrome.storage.local.set({ 
+                vocabulary: vocabulary,
+                archivedWords: [] 
+            });
+            
+            // Update local state
+            this.vocabulary = vocabulary;
+            
+            // Show success message
+            this.showSuccess(`${restoredCount} words restored, ${skippedCount} skipped (already existed)`);
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.word-modal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Refresh the display
+            this.renderWordsGrid();
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('Error restoring all archived words:', error);
+            this.showError('Failed to restore words');
+        }
+    }
+    
+    async deleteAllArchivedWords() {
+        try {
+            console.log('Deleting all archived words');
+            
+            // Get current archived words
+            const { archivedWords = [] } = await chrome.storage.local.get('archivedWords');
+            
+            if (archivedWords.length === 0) {
+                this.showError('No archived words to delete');
+                return;
+            }
+            
+            // Clear archived words
+            await chrome.storage.local.set({ archivedWords: [] });
+            
+            // Show success message
+            this.showSuccess(`${archivedWords.length} archived words deleted permanently`);
+            
+            // Close modal and refresh
+            const modal = document.querySelector('.word-modal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Refresh the display
+            this.renderWordsGrid();
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('Error deleting all archived words:', error);
+            this.showError('Failed to delete words');
         }
     }
     

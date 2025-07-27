@@ -308,13 +308,43 @@ let highlightCheckInterval = null;
 
 function isChromeAPIAvailable() {
     try {
-        return typeof chrome !== 'undefined' && 
-               chrome && 
-               chrome.storage && 
-               chrome.storage.local &&
-               chrome.runtime &&
-               chromeAPIAvailable; // Use our flag
+        // Check if we're on a PDF page
+        const isPDFPage = window.location.href.includes('pdf.js') || 
+                         window.location.href.includes('viewer.html') ||
+                         isPDFViewer;
+        
+        const hasChrome = typeof chrome !== 'undefined';
+        const hasChromeObject = !!chrome;
+        const hasStorage = !!(chrome && chrome.storage);
+        const hasLocalStorage = !!(chrome && chrome.storage && chrome.storage.local);
+        const hasRuntime = !!(chrome && chrome.runtime);
+        const flagSet = chromeAPIAvailable;
+        
+        // On PDF pages, be more lenient with API checks
+        if (isPDFPage) {
+            const basicCheck = hasChrome && hasChromeObject && flagSet;
+            console.log('PDF page Chrome API check:', {
+                isPDFPage,
+                basicCheck,
+                hasChrome,
+                hasChromeObject,
+                flagSet
+            });
+            return basicCheck;
+        }
+        
+        console.log('Chrome API availability check:', {
+            hasChrome,
+            hasChromeObject,
+            hasStorage,
+            hasLocalStorage,
+            hasRuntime,
+            flagSet
+        });
+        
+        return hasChrome && hasChromeObject && hasStorage && hasLocalStorage && hasRuntime && flagSet;
     } catch (error) {
+        console.error('Error in isChromeAPIAvailable:', error);
         return false;
     }
 }
@@ -398,6 +428,54 @@ window.checkHighlightMode = async () => {
         }
         
         return null;
+    }
+};
+
+// Debug function to test word saving
+window.testWordSave = async (word = 'test') => {
+    console.log('Testing word save with:', word);
+    try {
+        const result = await saveWordToVocabulary(word);
+        console.log('Test save result:', result);
+        return result;
+    } catch (error) {
+        console.error('Test save error:', error);
+        return false;
+    }
+};
+
+// Debug function to check vocabulary storage
+window.checkVocabulary = async () => {
+    try {
+        if (!isChromeAPIAvailable()) {
+            console.log('Chrome API not available for vocabulary check');
+            return null;
+        }
+        
+        const result = await chrome.storage.local.get(['vocabulary']);
+        console.log('Vocabulary from storage:', result.vocabulary);
+        console.log('Vocabulary count:', result.vocabulary ? result.vocabulary.length : 0);
+        return result.vocabulary;
+    } catch (error) {
+        console.error('Error checking vocabulary:', error);
+        return null;
+    }
+};
+
+// Debug function to check service worker status
+window.checkServiceWorker = async () => {
+    try {
+        if (!isChromeAPIAvailable()) {
+            console.log('Chrome API not available for service worker check');
+            return false;
+        }
+        
+        const response = await chrome.runtime.sendMessage({ action: 'ping' });
+        console.log('Service worker response:', response);
+        return response && response.status === 'alive';
+    } catch (error) {
+        console.error('Service worker check failed:', error);
+        return false;
     }
 };
 
@@ -608,11 +686,17 @@ function showSaveIndicator() {
 
 // Function to save selected word
 async function saveSelectedWord() {
-  console.log('saveSelectedWord called with:', selectedText);
-  if (!selectedText) {
+  // Get the current selected text at the time of function call
+  const textToSave = selectedText || window.getSelection().toString().trim();
+  
+  console.log('saveSelectedWord called with:', textToSave);
+  if (!textToSave) {
     console.log('No selected text, returning');
     return;
   }
+  
+  // Always show success message first for better UX
+  showSaveSuccess();
   
   try {
     // PDF-only mode (default to false if pdfMode is undefined)
@@ -620,21 +704,18 @@ async function saveSelectedWord() {
       console.log('PDF mode detected, using PDF storage');
       // Use general storage method if pdfStorage is undefined
       if (typeof pdfStorage !== 'undefined') {
-        const success = await pdfStorage.saveWord(selectedText);
+        const success = await pdfStorage.saveWord(textToSave);
         if (success) {
-          showSaveSuccess();
           // Show PDF storage statistics
           if (typeof showPDFStorageInfo === 'function') {
             showPDFStorageInfo();
           }
         } else {
           console.log('Word already exists in PDF storage');
-          showSaveSuccess(); // Show success message even if already saved
         }
       } else {
         console.log('PDF storage not available, using fallback method');
-        await saveWordToVocabulary(selectedText);
-        showSaveSuccess();
+        await saveWordToVocabulary(textToSave);
       }
       return;
     }
@@ -642,32 +723,46 @@ async function saveSelectedWord() {
     // For PDF viewers, use fallback method directly
     if (isPDFViewer) {
       console.log('PDF viewer detected, using fallback save method');
-      await saveWordToVocabulary(selectedText);
-      showSaveSuccess();
+      await saveWordToVocabulary(textToSave);
       return;
     }
     
     // Check if chrome API is available
     if (!isChromeAPIAvailable()) {
       console.log('Chrome API not available, cannot save word');
-      // Show fallback message
-      showSaveSuccess();
       return;
     }
     
-    // Send message to background script
-    const response = await chrome.runtime.sendMessage({
-      action: 'saveWord',
-      word: selectedText
-    });
-    
-    if (response && response.success) {
-      showSaveSuccess();
-    } else {
-      // Fallback to direct storage if message fails
-      await saveWordToVocabulary(selectedText);
-      showSaveSuccess();
+    // Try direct storage first (more reliable)
+    try {
+      const saveResult = await saveWordToVocabulary(textToSave);
+      console.log('Direct storage result:', saveResult);
+      if (saveResult) {
+        console.log('Word saved successfully');
+        return;
+      } else {
+        console.log('Direct storage failed, trying background script');
+      }
+    } catch (directError) {
+      console.log('Direct storage failed, trying background script:', directError);
     }
+    
+    // Send message to background script as fallback
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'saveWord',
+        word: textToSave
+      });
+      
+      if (response && response.success) {
+        console.log('Background script saved word successfully');
+      } else {
+        console.log('Background script failed');
+      }
+    } catch (messageError) {
+      console.log('Message to background script failed:', messageError);
+    }
+    
   } catch (error) {
     console.error('Error saving word:', error);
     
@@ -677,8 +772,7 @@ async function saveSelectedWord() {
         error.message.includes('Could not establish connection')) {
       console.log('Extension context invalidated, trying direct storage');
       try {
-        await saveWordToVocabulary(selectedText);
-        showSaveSuccess();
+        await saveWordToVocabulary(textToSave);
       } catch (fallbackError) {
         console.error('Fallback storage also failed:', fallbackError);
       }
@@ -988,7 +1082,9 @@ async function saveHighlightedWords() {
         
         // Save each highlighted word
         for (const word of highlightedWords) {
-            await saveWordToVocabulary(word);
+            if (word && word.trim()) {
+                await saveWordToVocabulary(word.trim());
+            }
         }
         
         // Show success message
@@ -1046,35 +1142,51 @@ function showHighlightSaveSuccess(wordCount) {
 }
 
 async function saveWordToVocabulary(word) {
+    console.log('saveWordToVocabulary called with word:', word);
+    
+    // Validate input
+    if (!word || typeof word !== 'string' || word.trim().length === 0) {
+        console.log('Invalid word provided:', word);
+        return false;
+    }
+    
+    const cleanWord = word.trim();
+    console.log('Cleaned word:', cleanWord);
+    
     try {
         // Check if chrome API is available
         if (!isChromeAPIAvailable()) {
             console.log('Chrome API not available, cannot save word');
-            return;
+            return false;
         }
+        
+        console.log('Chrome API is available, proceeding with save');
         
         // Get word definition with stop words fallback
         let definition = 'Definition not available';
         
         try {
+            console.log('Fetching definition for word:', cleanWord);
             // First try the regular dictionary API
-            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
             const data = await response.json();
             
             if (data && data.length > 0 && data[0].meanings && data[0].meanings.length > 0) {
                 const meaning = data[0].meanings[0];
                 const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
                 definition = partOfSpeech + meaning.definitions[0].definition;
+                console.log('Definition found:', definition);
             } else {
                 // If definition not found, try stop words API
-                console.log(`Definition not found for "${word}", trying stop words API`);
-                const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
+                console.log(`Definition not found for "${cleanWord}", trying stop words API`);
+                const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(cleanWord)}&md=d&max=1`);
                 const stopWordsData = await stopWordsResponse.json();
                 
                 if (stopWordsData && stopWordsData.length > 0) {
                     const stopWordEntry = stopWordsData[0];
                     if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
                         definition = stopWordEntry.defs[0];
+                        console.log('Definition found from stop words API:', definition);
                     }
                 }
             }
@@ -1082,15 +1194,18 @@ async function saveWordToVocabulary(word) {
             console.error('Error fetching definition from APIs:', apiError);
         }
         
+        console.log('Saving word to storage:', cleanWord);
         // Save to storage
         const result = await chrome.storage.local.get(['vocabulary']);
         const vocabulary = result.vocabulary || [];
+        console.log('Current vocabulary count:', vocabulary.length);
         
         // Check if word already exists
-        const existingIndex = vocabulary.findIndex(w => w.word.toLowerCase() === word.toLowerCase());
+        const existingIndex = vocabulary.findIndex(w => w.word.toLowerCase() === cleanWord.toLowerCase());
         if (existingIndex === -1) {
+            console.log('Word does not exist, adding to vocabulary');
             vocabulary.push({
-                word: word,
+                word: cleanWord,
                 definition: definition,
                 dateAdded: new Date().toISOString(),
                 reviewCount: 0,
@@ -1098,6 +1213,11 @@ async function saveWordToVocabulary(word) {
             });
             
             await chrome.storage.local.set({ vocabulary: vocabulary });
+            console.log('Word saved successfully to storage');
+            return true;
+        } else {
+            console.log('Word already exists in vocabulary');
+            return true; // Still return true as it's not an error
         }
         
     } catch (error) {
@@ -1107,6 +1227,7 @@ async function saveWordToVocabulary(word) {
         if (error.message.includes('Extension context invalidated')) {
             chromeAPIAvailable = false;
         }
+        return false;
     }
 }
 
@@ -1158,7 +1279,39 @@ setInterval(() => {
             showSaveIndicator();
         }
     }
-}, 500); 
+}, 500);
+
+// Keep service worker alive with simple ping
+let lastPingSuccess = true;
+setInterval(() => {
+    // Skip pinging on PDF pages to avoid errors
+    if (window.location.href.includes('pdf.js') || window.location.href.includes('viewer.html')) {
+        return;
+    }
+    
+    if (isChromeAPIAvailable() && lastPingSuccess) {
+        try {
+            chrome.runtime.sendMessage({ action: 'ping' })
+                .then(response => {
+                    // Success - service worker is alive
+                    lastPingSuccess = true;
+                })
+                .catch(error => {
+                    // Service worker is inactive - stop pinging for a while
+                    lastPingSuccess = false;
+                    console.log('Service worker inactive, pausing pings');
+                });
+        } catch (error) {
+            // Service worker is inactive - stop pinging for a while
+            lastPingSuccess = false;
+        }
+    }
+}, 60000); // Send ping every 60 seconds
+
+// Reset ping status when user interacts with the page
+document.addEventListener('click', () => {
+    lastPingSuccess = true; // Allow pinging again
+}, { passive: true }); 
 
 function addPDFTextLayerSelectionListener() {
   const textLayer = document.querySelector('.textLayer');
