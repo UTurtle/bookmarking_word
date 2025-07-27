@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Vocabulary Bookmarker",
-  "version": "1.1.0",
+  "name": "Vocabulary Learning Note",
+  "version": "1.0.0",
   "description": "Advanced vocabulary learning tool with quiz features, progress tracking, and smart word management. Save words while browsing and review them with interactive quizzes.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -10,7 +10,9 @@
     "storage",
     "activeTab",
     "scripting",
-    "tabs"
+    "tabs",
+    "webNavigation",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://api.dictionaryapi.dev/*",
@@ -19,6 +21,10 @@
   "background": {
     "service_worker": "src/js/background.js"
   },
+  "chrome_url_overrides": {
+    "newtab": "src/html/newtab.html"
+  },
+
   "content_scripts": [
     {
       "matches": [
@@ -44,16 +50,14 @@
   ],
   "action": {
     "default_popup": "src/html/popup.html",
-    "default_title": "Vocabulary Bookmarker",
+    "default_title": "Vocabulary Learning Note",
     "default_icon": {
       "16": "src/assets/icons/icon16.png",
       "48": "src/assets/icons/icon48.png",
       "128": "src/assets/icons/icon128.png"
     }
   },
-  "chrome_url_overrides": {
-    "newtab": "src/html/newtab.html"
-  },
+
   "commands": {
     "save-word": {
       "suggested_key": {

@@ -3,30 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vocabulary Board</title>
+    <title>Vocabulary Learning Note</title>
     <link rel="stylesheet" href="../css/newtab.css">
 </head>
-<body>
-    <div class="container">
-        <header class="header">
+<body class="compact-layout">
+    <!-- 사이드바 메뉴 -->
+    <div class="sidebar-menu" id="sidebar-menu">
+            <!-- 접혀있는 상태에서 보이는 아이콘 버튼들 -->
+            <div class="sidebar-icons">
+                <button id="refresh-words-icon" class="icon-btn" title="Refresh">🔄</button>
+                <button id="export-words-icon" class="icon-btn" title="Export">📤</button>
+                <button id="import-words-icon" class="icon-btn" title="Import">📥</button>
+                <button id="toggle-all-definitions-icon" class="icon-btn" title="Hide All Definitions">👁️</button>
+                <button id="toggle-all-words-icon" class="icon-btn" title="Hide All Words">🙈</button>
+                <button id="toggle-card-buttons-icon" class="icon-btn" title="Toggle Card Buttons">🔘</button>
+                <button id="toggle-card-click-icon" class="icon-btn" title="Toggle Card Click">🖱️</button>
+                <button id="pin-all-icon" class="icon-btn" title="Pin All">📌</button>
+                <button id="unpin-all-icon" class="icon-btn" title="Unpin All">📍</button>
+                <button id="show-archived-icon" class="icon-btn" title="Archived Words">📦</button>
+                <button id="update-examples-icon" class="icon-btn" title="Update Examples">💬</button>
+                <button id="start-quiz-icon" class="icon-btn quiz-icon" title="Start Quiz">🎯</button>
+                <button id="status-icon" class="icon-btn status-icon" title="Status">📊</button>
+            </div>
+            
+            <div class="sidebar-header">
+                <h3>📋 Menu</h3>
+                <button class="sidebar-toggle" id="sidebar-toggle">×</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="menu-section">
+                    <h4>🔄 Data Management</h4>
+                    <button id="refresh-words" class="menu-btn">🔄 Refresh</button>
+                    <button id="export-words" class="menu-btn">📤 Export</button>
+                    <button id="import-words" class="menu-btn">📥 Import</button>
+                </div>
+                
+                <div class="menu-section">
+                    <h4>👁️ Display Settings</h4>
+                    <button id="toggle-all-definitions" class="menu-btn">🙈 Hide All Definitions</button>
+                    <button id="toggle-all-words" class="menu-btn">🙈 Hide All Words</button>
+                    <button id="toggle-card-buttons" class="menu-btn">🔘 Toggle Card Buttons</button>
+                    <button id="toggle-card-click" class="menu-btn">🖱️ Toggle Card Click</button>
+                </div>
+                
+                <div class="menu-section">
+                    <h4>📌 Pin Management</h4>
+                    <button id="pin-all" class="menu-btn">📌 Pin All</button>
+                    <button id="unpin-all" class="menu-btn">📌 Unpin All</button>
+                </div>
+                
+                <div class="menu-section">
+                    <h4>📦 Archive</h4>
+                    <button id="show-archived" class="menu-btn">📦 Archived Words</button>
+                    <button id="update-examples" class="menu-btn">💬 Update Examples</button>
+                </div>
+                
+                <div class="menu-section">
+                    <h4>🎯 Learning</h4>
+                    <button id="start-quiz" class="menu-btn quiz-btn">🎯 Start Quiz</button>
+                    <button id="status" class="menu-btn status-btn">📊 Status</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 메뉴 토글 버튼 -->
+        <button class="menu-toggle-btn" id="menu-toggle-btn">☰</button>
+        
+        <div class="container">
+            <header class="header">
             <div class="header-top">
-                <h1>📚 Vocabulary Board</h1>
+                <!-- 왼쪽: 시계 -->
+                <div class="time-display">
+                    <span id="current-time">Loading...</span>
+                    <span id="current-date">Loading...</span>
+                </div>
+                
+                <!-- 중앙: URL 검색창 -->
+                <div class="url-search-container">
+                    <form id="url-search-form" class="url-search-form">
+                        <input type="text" id="url-search-input" placeholder="Search Google or enter a website name..." class="url-search-input">
+                        <button type="submit" class="url-search-btn">🔍</button>
+                    </form>
+                </div>
+                
+                <!-- 오른쪽: 헤더 컨트롤 -->
                 <div class="header-controls">
+                    <a href="https://mail.google.com" target="_blank" class="header-link">Gmail</a>
+                    <a href="https://myaccount.google.com/" target="_blank" class="header-link">Account</a>
+                    <button id="layout-toggle" class="layout-btn" title="Toggle Layout (Ctrl+L)">
+                        <span class="layout-icon">📐</span>
+                    </button>
                     <button id="animation-toggle" class="animation-btn" title="Toggle animations (Ctrl+A)">
                         <span class="animation-icon">🎬</span>
                     </button>
                     <button id="dark-mode-toggle" class="dark-mode-btn" title="Toggle dark mode (Ctrl+D)">
                         <span class="dark-mode-icon">🌙</span>
                     </button>
-                    <button id="settings" class="settings-btn" title="Settings">
-                        <span class="settings-icon">⚙️</span>
-                    </button>
                 </div>
-            </div>
-            <div class="stats">
-                <span id="total-words">0 words</span>
-                <span id="today-reviewed">0 pinned</span>
-                <span id="weekly-score">Weekly Score: 0</span>
             </div>
         </header>
         
@@ -40,25 +113,7 @@
                     <button id="board-view" class="btn btn-view active" data-view="board">📋 Board View</button>
                     <button id="table-view" class="btn btn-view" data-view="table">📊 Table View</button>
                 </div>
-                <div class="control-buttons">
-                    <button id="refresh-words" class="btn btn-primary">🔄 Refresh</button>
-                    <button id="add-sample" class="btn btn-secondary">➕ Add Sample</button>
-                    <button id="export-words" class="btn btn-outline">📤 Export</button>
-                    <button id="import-words" class="btn btn-outline">📥 Import</button>
-                    <button id="toggle-all-definitions" class="btn btn-outline">🙈 Hide All Definitions</button>
-                    <button id="toggle-all-words" class="btn btn-outline">🙈 Hide All Words</button>
-                    <button id="pin-all" class="btn btn-outline">📌 Pin All</button>
-                    <button id="unpin-all" class="btn btn-outline">📌 Unpin All</button>
-                    <button id="show-archived" class="btn btn-outline">📦 Archived Words</button>
-                    <button id="update-examples" class="btn btn-outline">💬 Update Examples</button>
-                    <button id="start-quiz" class="btn btn-quiz">🎯 Start Quiz</button>
-                    <button id="status" class="btn btn-status">📊 Status</button>
-                </div>
-            </div>
-            
-            <!-- Text selection guide -->
-            <div class="text-selection-guide">
-                <p>💡 <strong>Tip:</strong> Select any text on this page to save it to your vocabulary! You can also use <strong>Ctrl+Shift+S</strong> to save selected text.</p>
+
             </div>
             
             <div class="sort-controls">
@@ -91,10 +146,11 @@
             <button id="clear-all" class="btn btn-danger">Clear All</button>
             <div class="api-credits">
                 <p>Thanks to: <a href="https://dictionaryapi.dev/" target="_blank">Dictionary API</a> for definitions, 
-                <a href="https://www.datamuse.com/api/" target="_blank">Datamuse API</a> for word relationships, 
+                <a href="https://www.datamuse.com/api/" target="_blank">Datamuse API</a> for word relationships and stop words, 
                 and <a href="https://mozilla.github.io/pdf.js/" target="_blank">Mozilla PDF.js</a> for PDF viewing</p>
             </div>
         </footer>
+        </div>
     </div>
     
     <!-- Quiz Type Selection Modal -->
@@ -194,68 +250,7 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>⚙️ Settings</h2>
-                <button class="modal-close" id="close-settings">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-section">
-                    <h3>Profile</h3>
-                    <div class="setting-item">
-                        <label for="user-name-input">Display Name:</label>
-                        <input type="text" id="user-name-input" placeholder="Enter your name">
-                        <button id="generate-random-name" class="btn-secondary">🎲 Generate Random</button>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <h3>Appearance</h3>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="dark-mode-toggle"> Dark Mode
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="animations-toggle"> Enable Animations
-                        </label>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <h3>Quiz</h3>
-                    <div class="setting-item">
-                        <label for="streak-bonus-toggle">
-                            <input type="checkbox" id="streak-bonus-toggle" checked> Enable Streak Bonus (+2 points per day)
-                        </label>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <h3>Card Interaction</h3>
-                    <div class="setting-item">
-                        <label for="card-click-toggle">
-                            <input type="checkbox" id="card-click-toggle" checked> Enable card click to toggle word/definition visibility
-                        </label>
-                        <p class="setting-description">When enabled, clicking on a word card will hide/show the word or definition. Disable this if you want to copy text without accidentally hiding content.</p>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <h3>PDF Settings</h3>
-                    <div class="setting-item">
-                        <label for="pdf-auto-redirect-toggle">
-                            <input type="checkbox" id="pdf-auto-redirect-toggle" checked> Auto-redirect PDF files to PDF.js viewer
-                        </label>
-                        <p class="setting-description">When enabled, PDF files will automatically open in the PDF.js viewer for better text selection and word saving capabilities.</p>
-                    </div>
-                </div>
-                <div class="settings-actions">
-                    <button id="save-settings" class="btn-primary">Save Settings</button>
-                    <button id="reset-settings" class="btn-secondary">Reset to Default</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
     
     <!-- Hidden file input for import -->
     <input type="file" id="import-file-input" accept=".csv" style="display: none;">

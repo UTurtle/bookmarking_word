@@ -193,6 +193,17 @@ function handleTextSelection() {
 
 // Listen for keyboard shortcuts
 document.addEventListener('keydown', function(event) {
+  console.log('Keydown event:', event.key, 'Ctrl:', event.ctrlKey, 'Shift:', event.shiftKey);
+  
+  // Handle Escape key
+  if (event.key === 'Escape') {
+    if (highlightMode) {
+      clearAllHighlights();
+    } else {
+      hideSaveIndicator();
+    }
+    return;
+  }
   
   // Check for custom shortcut first, then default
   checkCustomShortcut(event);
@@ -341,14 +352,15 @@ function startHighlightModeCheck() {
             consecutiveErrors++;
             console.error(`Error checking highlight mode (attempt ${consecutiveErrors}):`, error);
             
-            // Check for specific error types
+            // Check for specific error types and stop immediately
             if (error.message.includes('Extension context invalidated') || 
                 error.message.includes('Cannot read properties of undefined') ||
                 error.message.includes('chrome.storage is undefined') ||
                 error.message.includes('Receiving end does not exist') ||
-                error.message.includes('Could not establish connection')) {
+                error.message.includes('Could not establish connection') ||
+                error.message.includes('Extension context invalidated')) {
                 
-                console.log('Extension context invalid, disabling Chrome API');
+                console.log('Extension context invalid, disabling Chrome API and stopping interval');
                 chromeAPIAvailable = false;
                 clearInterval(highlightCheckInterval);
                 return;
@@ -362,7 +374,7 @@ function startHighlightModeCheck() {
                 return;
             }
         }
-    }, 15000); // Increased interval to 15 seconds to reduce API calls even more
+    }, 30000); // Increased interval to 30 seconds to reduce API calls
 }
 
 // Debug function to check highlight mode status
@@ -391,15 +403,27 @@ window.checkHighlightMode = async () => {
 
 // Function to check custom shortcut
 async function checkCustomShortcut(event) {
+  console.log('Checking custom shortcut for:', event.key, 'Ctrl:', event.ctrlKey, 'Shift:', event.shiftKey);
+  console.log('Selected text:', selectedText);
+  
+  // Only process modifier key combinations
+  // Ignore single key presses that might interfere with normal typing
+  if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
+    return; // Only process modifier key combinations
+  }
+  
   try {
     // Check if chrome API is available
     if (!isChromeAPIAvailable()) {
       console.log('Chrome API not available, using default shortcut');
       // Fallback to default shortcut
       if (event.ctrlKey && event.shiftKey && event.key === 'S') {
+        console.log('Default shortcut detected, saving word');
         event.preventDefault();
         if (selectedText) {
           saveSelectedWord();
+        } else {
+          console.log('No text selected');
         }
       }
       return;
@@ -584,7 +608,11 @@ function showSaveIndicator() {
 
 // Function to save selected word
 async function saveSelectedWord() {
-  if (!selectedText) return;
+  console.log('saveSelectedWord called with:', selectedText);
+  if (!selectedText) {
+    console.log('No selected text, returning');
+    return;
+  }
   
   try {
     // PDF-only mode (default to false if pdfMode is undefined)
@@ -881,7 +909,7 @@ function showHighlightSaveButton() {
         ">
             <span style="font-weight: bold;">💾</span>
             <span>Save ${highlightedWords.length} selection${highlightedWords.length > 1 ? 's' : ''} (${totalWordCount} words)</span>
-            <button style="
+            <button id="clear-highlights-btn" style="
                 background: rgba(255,255,255,0.2);
                 border: none;
                 color: white;
@@ -890,12 +918,21 @@ function showHighlightSaveButton() {
                 cursor: pointer;
                 font-size: 12px;
                 margin-left: 8px;
-            " onclick="clearAllHighlights()">Clear All</button>
+            ">Clear All</button>
         </div>
     `;
     
     button.addEventListener('click', saveHighlightedWords);
     document.body.appendChild(button);
+    
+    // Add event listener for clear button
+    const clearButton = button.querySelector('#clear-highlights-btn');
+    if (clearButton) {
+        clearButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearAllHighlights();
+        });
+    }
     
     // Add CSS animation
     if (!document.getElementById('highlight-animations')) {
@@ -1016,15 +1053,33 @@ async function saveWordToVocabulary(word) {
             return;
         }
         
-        // Get word definition
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        const data = await response.json();
-        
+        // Get word definition with stop words fallback
         let definition = 'Definition not available';
-        if (data && data.length > 0 && data[0].meanings && data[0].meanings.length > 0) {
-            const meaning = data[0].meanings[0];
-            const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
-            definition = partOfSpeech + meaning.definitions[0].definition;
+        
+        try {
+            // First try the regular dictionary API
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+            const data = await response.json();
+            
+            if (data && data.length > 0 && data[0].meanings && data[0].meanings.length > 0) {
+                const meaning = data[0].meanings[0];
+                const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
+                definition = partOfSpeech + meaning.definitions[0].definition;
+            } else {
+                // If definition not found, try stop words API
+                console.log(`Definition not found for "${word}", trying stop words API`);
+                const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
+                const stopWordsData = await stopWordsResponse.json();
+                
+                if (stopWordsData && stopWordsData.length > 0) {
+                    const stopWordEntry = stopWordsData[0];
+                    if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
+                        definition = stopWordEntry.defs[0];
+                    }
+                }
+            }
+        } catch (apiError) {
+            console.error('Error fetching definition from APIs:', apiError);
         }
         
         // Save to storage
@@ -1064,15 +1119,7 @@ document.addEventListener('contextmenu', function(event) {
   }
 });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (highlightMode) {
-      clearAllHighlights();
-    } else {
-      hideSaveIndicator();
-    }
-  }
-});
+// Escape key handling is now integrated into the main keydown listener
 
 document.addEventListener('click', (e) => {
   if (e.target.closest('#highlight-save-button')) {

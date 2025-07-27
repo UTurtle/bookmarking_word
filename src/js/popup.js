@@ -25,6 +25,13 @@ class VocabularyPopup {
         
         // Settings elements
         this.toggle = document.getElementById('toggle');
+        this.animationToggle = document.getElementById('animation-toggle');
+        this.pdfRedirectToggle = document.getElementById('pdf-redirect-toggle');
+        this.darkModeToggle = document.getElementById('dark-mode-toggle');
+
+        this.streakBonusToggle = document.getElementById('streak-bonus-toggle');
+        this.newtabOverrideToggle = document.getElementById('newtab-override-toggle');
+        this.openMainBtn = document.getElementById('open-main-btn');
         this.customShortcutInput = document.getElementById('custom-shortcut');
         this.saveShortcutBtn = document.getElementById('save-shortcut-btn');
         this.resetShortcutBtn = document.getElementById('reset-shortcut-btn');
@@ -46,6 +53,13 @@ class VocabularyPopup {
         
         // Settings
         this.toggle.addEventListener('click', () => this.toggleHighlightMode());
+        this.animationToggle.addEventListener('click', () => this.toggleAnimation());
+        this.pdfRedirectToggle.addEventListener('click', () => this.togglePdfRedirect());
+        this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+
+        this.streakBonusToggle.addEventListener('click', () => this.toggleStreakBonus());
+        this.newtabOverrideToggle.addEventListener('click', () => this.toggleNewtabOverride());
+        this.openMainBtn.addEventListener('click', () => this.openMainBoard());
         this.saveShortcutBtn.addEventListener('click', () => this.saveCustomShortcut());
         this.resetShortcutBtn.addEventListener('click', () => this.resetCustomShortcut());
         
@@ -70,7 +84,16 @@ class VocabularyPopup {
     
     async loadSettings() {
         try {
-            const result = await chrome.storage.local.get(['highlightMode', 'customShortcut']);
+            const result = await chrome.storage.local.get([
+                'highlightMode', 
+                'animationsEnabled', 
+                'pdfAutoRedirect', 
+                'darkMode',
+
+                'streakBonusEnabled',
+                'newtabOverride',
+                'customShortcut'
+            ]);
             
             // Load highlight mode
             const highlightMode = result.highlightMode || false;
@@ -78,6 +101,48 @@ class VocabularyPopup {
                 this.toggle.classList.add('active');
             } else {
                 this.toggle.classList.remove('active');
+            }
+            
+            // Load animation setting
+            const animationsEnabled = result.animationsEnabled !== false; // Default to true
+            if (animationsEnabled) {
+                this.animationToggle.classList.add('active');
+            } else {
+                this.animationToggle.classList.remove('active');
+            }
+            
+            // Load PDF redirect setting (default to false for compliance)
+            const pdfAutoRedirect = result.pdfAutoRedirect || false;
+            if (pdfAutoRedirect) {
+                this.pdfRedirectToggle.classList.add('active');
+            } else {
+                this.pdfRedirectToggle.classList.remove('active');
+            }
+            
+            // Load dark mode setting
+            const darkMode = result.darkMode || false;
+            if (darkMode) {
+                this.darkModeToggle.classList.add('active');
+            } else {
+                this.darkModeToggle.classList.remove('active');
+            }
+            
+
+            
+            // Load streak bonus setting
+            const streakBonusEnabled = result.streakBonusEnabled !== false; // Default to true
+            if (streakBonusEnabled) {
+                this.streakBonusToggle.classList.add('active');
+            } else {
+                this.streakBonusToggle.classList.remove('active');
+            }
+            
+            // Load newtab override setting (default to true)
+            const newtabOverride = result.newtabOverride !== false; // Default to true
+            if (newtabOverride) {
+                this.newtabOverrideToggle.classList.add('active');
+            } else {
+                this.newtabOverrideToggle.classList.remove('active');
             }
             
             // Load custom shortcut
@@ -231,6 +296,90 @@ class VocabularyPopup {
         } catch (error) {
             console.error('Error toggling highlight mode:', error);
             this.showError('Failed to update highlight mode');
+        }
+    }
+    
+    async toggleAnimation() {
+        try {
+            const isActive = this.animationToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            this.animationToggle.classList.toggle('active');
+            await chrome.storage.local.set({ animationsEnabled: newState });
+        } catch (error) {
+            console.error('Error toggling animation:', error);
+            this.showError('Failed to update animation setting');
+        }
+    }
+    
+    async togglePdfRedirect() {
+        try {
+            const isActive = this.pdfRedirectToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            this.pdfRedirectToggle.classList.toggle('active');
+            await chrome.storage.local.set({ pdfAutoRedirect: newState });
+        } catch (error) {
+            console.error('Error toggling PDF redirect:', error);
+            this.showError('Failed to update PDF redirect setting');
+        }
+    }
+    
+    async toggleDarkMode() {
+        try {
+            const isActive = this.darkModeToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            this.darkModeToggle.classList.toggle('active');
+            await chrome.storage.local.set({ darkMode: newState });
+        } catch (error) {
+            console.error('Error toggling dark mode:', error);
+            this.showError('Failed to update dark mode setting');
+        }
+    }
+    
+
+    
+    async toggleStreakBonus() {
+        try {
+            const isActive = this.streakBonusToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            this.streakBonusToggle.classList.toggle('active');
+            await chrome.storage.local.set({ streakBonusEnabled: newState });
+        } catch (error) {
+            console.error('Error toggling streak bonus:', error);
+            this.showError('Failed to update streak bonus setting');
+        }
+    }
+    
+    async toggleNewtabOverride() {
+        try {
+            const isActive = this.newtabOverrideToggle.classList.contains('active');
+            const newState = !isActive;
+            
+            this.newtabOverrideToggle.classList.toggle('active');
+            await chrome.storage.local.set({ newtabOverride: newState });
+            
+            // Show success message
+            if (newState) {
+                this.showSuccess('New tab override enabled - new tabs will show vocabulary board');
+            } else {
+                this.showSuccess('New tab override disabled - new tabs will show default page');
+            }
+        } catch (error) {
+            console.error('Error toggling newtab override:', error);
+            this.showError('Failed to update newtab override setting');
+        }
+    }
+    
+    async openMainBoard() {
+        try {
+            const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
+            await chrome.tabs.create({ url: newtabUrl });
+        } catch (error) {
+            console.error('Error opening main board:', error);
+            this.showError('Failed to open vocabulary board');
         }
     }
     

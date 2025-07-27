@@ -1,6 +1,6 @@
-# 📚 Vocabulary Bookmarker
+# 📚 Vocabulary Learning Note
 
-![Vocabulary Bookmarker Preview](preview_1.png)
+![Vocabulary Learning Note Preview](preview_1.png)
 
 A Chrome extension for vocabulary learning with interactive quizzes, progress tracking, and smart word management.
 

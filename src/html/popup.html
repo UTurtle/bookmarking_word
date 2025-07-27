@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Vocabulary Bookmarker</title>
+    <title>Vocabulary Learning Note</title>
     <style>
         body {
             width: 400px;
@@ -232,7 +232,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>📚 Vocabulary Bookmarker</h1>
+        <h1>drag word and <strong>Ctrl+Shift+S</strong> to save words</h1>
         <div class="stats">
             <span id="word-count">0 words</span>
         </div>
@@ -255,6 +255,12 @@
         <div class="actions">
             <button id="export-btn" class="btn btn-primary">Export CSV</button>
             <button id="clear-all-btn" class="btn btn-danger">Clear All</button>
+        </div>
+        
+        <div style="margin: 15px 0; text-align: center;">
+            <button id="open-main-btn" class="btn btn-outline" style="width: 100%;">
+                📚 Open Vocabulary Board
+            </button>
         </div>
         
         <div class="settings-section">
@@ -281,12 +287,58 @@
             </div>
             
             <div class="setting-item">
+                <div class="setting-label">PDF Auto-Redirect</div>
+                <div class="toggle-container">
+                    <div id="pdf-redirect-toggle" class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span>Auto-open PDFs in viewer</span>
+                </div>
+                <div class="help-text">Automatically redirect PDF files to PDF.js viewer for better text selection. Disabled by default for Chrome Web Store compliance.</div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">Dark Mode</div>
+                <div class="toggle-container">
+                    <div id="dark-mode-toggle" class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span>Dark theme</span>
+                </div>
+                <div class="help-text">Enable dark mode for the new tab page</div>
+            </div>
+            
+
+            
+            <div class="setting-item">
+                <div class="setting-label">Streak Bonus</div>
+                <div class="toggle-container">
+                    <div id="streak-bonus-toggle" class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span>+2 points per day streak</span>
+                </div>
+                <div class="help-text">Enable streak bonus for daily quiz participation</div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-label">New Tab Override</div>
+                <div class="toggle-container">
+                    <div id="newtab-override-toggle" class="toggle-switch">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span>Replace new tab with vocabulary board</span>
+                </div>
+                <div class="help-text">When enabled, new tabs will show the vocabulary board. When disabled, you can access it through the extension popup.</div>
+            </div>
+            
+            <div class="setting-item">
                 <div class="setting-label">Custom Save Shortcut</div>
                 <input type="text" id="custom-shortcut" placeholder="e.g., Ctrl+Alt+S" class="shortcut-input">
                 <div class="help-text">Default: Ctrl+Shift+S | Examples: Ctrl+Alt+S</div>
                 <div style="margin-top: 10px;">
-                    <button id="save-shortcut-btn" class="btn btn-primary">Save</button>
-                    <button id="reset-shortcut-btn" class="btn btn-outline">Reset</button>
+                    <button id="save-shortcut-btn" class="btn btn-primary">Save Shortcut</button>
+                    <button id="reset-shortcut-btn" class="btn btn-outline">Reset Shortcut</button>
                 </div>
             </div>
         </div>

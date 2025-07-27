@@ -15,10 +15,16 @@ class VocabularyBoard {
         this.lastQuizDate = null;
         this.streakBonusEnabled = true;
         this.cardClickToggleEnabled = true; // 카드 클릭 토글 기능 활성화 여부
+        this.currentLayout = 'compact'; // 'compact' or 'classic'
+        this.cardButtonsVisible = true; // 카드 버튼 표시 여부
         
         // Search prevention flags
         this.searchingWord = false;
         this.lastSearchTime = null;
+        
+        // Card click debouncing
+        this.lastCardClickTime = 0;
+        this.cardClickDebounceDelay = 100; // 0.1초 딜레이
         
         // Quiz is now handled in separate window, no cleanup needed
         
@@ -30,6 +36,7 @@ class VocabularyBoard {
         this.loadVocabulary();
         this.loadSettings();
         this.loadWeeklyScore();
+        this.startTimeUpdate();
     }
     
     initializeElements() {
@@ -45,6 +52,7 @@ class VocabularyBoard {
         this.clearAllBtn = document.getElementById('clear-all');
         this.darkModeToggle = document.getElementById('dark-mode-toggle');
         this.animationToggle = document.getElementById('animation-toggle');
+        this.layoutToggle = document.getElementById('layout-toggle');
         this.totalWordsSpan = document.getElementById('total-words');
         this.todayReviewedSpan = document.getElementById('today-reviewed');
         this.weeklyScoreSpan = document.getElementById('weekly-score');
@@ -61,7 +69,16 @@ class VocabularyBoard {
         this.tableViewBtn = document.getElementById('table-view');
         this.toggleAllDefinitionsBtn = document.getElementById('toggle-all-definitions');
         this.toggleAllWordsBtn = document.getElementById('toggle-all-words');
+        this.toggleCardButtonsBtn = document.getElementById('toggle-card-buttons');
+        this.toggleCardClickBtn = document.getElementById('toggle-card-click');
         this.pinAllBtn = document.getElementById('pin-all');
+        
+        // Sidebar menu elements
+        this.sidebarMenu = document.getElementById('sidebar-menu');
+        this.sidebarToggle = document.getElementById('sidebar-toggle');
+        this.menuToggleBtn = document.getElementById('menu-toggle-btn');
+        
+
         this.unpinAllBtn = document.getElementById('unpin-all');
         
         // Quiz elements are now in separate window
@@ -70,7 +87,7 @@ class VocabularyBoard {
         this.quizTypeModal = document.getElementById('quiz-type-modal');
         this.scoreModal = document.getElementById('score-modal');
         this.statusModal = document.getElementById('status-modal');
-        this.settingsModal = document.getElementById('settings-modal');
+
         
         // Score modal elements
         this.finalScoreSpan = document.getElementById('final-score-text');
@@ -88,16 +105,15 @@ class VocabularyBoard {
         this.todayQuizzesCountSpan = document.getElementById('today-quizzes-count');
         this.todayTotalScoreSpan = document.getElementById('today-total-score');
         
-        // Settings elements
-        this.userNameInput = document.getElementById('user-name-input');
-        this.generateRandomNameBtn = document.getElementById('generate-random-name');
-        this.settingsDarkModeToggle = document.getElementById('dark-mode-toggle');
-        this.animationsToggle = document.getElementById('animations-toggle');
-        this.streakBonusToggle = document.getElementById('streak-bonus-toggle');
-        this.cardClickToggle = document.getElementById('card-click-toggle');
-        this.pdfAutoRedirectToggle = document.getElementById('pdf-auto-redirect-toggle');
-        this.saveSettingsBtn = document.getElementById('save-settings');
-        this.resetSettingsBtn = document.getElementById('reset-settings');
+        // Time display elements
+        this.currentTimeSpan = document.getElementById('current-time');
+        this.currentDateSpan = document.getElementById('current-date');
+        
+        // URL search elements
+        this.urlSearchForm = document.getElementById('url-search-form');
+        this.urlSearchInput = document.getElementById('url-search-input');
+        
+
         
         // Optional: Check for critical missing elements
         const criticalElements = ['wordsGrid', 'searchInput', 'sortSelect'];
@@ -188,6 +204,65 @@ class VocabularyBoard {
             e.stopPropagation();
             this.toggleAnimations();
         });
+        if (this.layoutToggle) this.layoutToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleLayout();
+        });
+        if (this.toggleCardButtonsBtn) this.toggleCardButtonsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleCardButtons();
+        });
+        
+        if (this.toggleCardClickBtn) this.toggleCardClickBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleCardClick();
+        });
+        
+
+        
+        // Sidebar menu events
+        if (this.menuToggleBtn) {
+            this.menuToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleSidebar();
+            });
+        }
+        
+        // Icon button events (for collapsed sidebar)
+        const iconButtons = [
+            { id: 'refresh-words-icon', action: () => this.refreshWords() },
+            { id: 'export-words-icon', action: () => this.exportWords() },
+            { id: 'import-words-icon', action: () => this.importWords() },
+            { id: 'toggle-all-definitions-icon', action: () => this.toggleAllDefinitions() },
+            { id: 'toggle-all-words-icon', action: () => this.toggleAllWords() },
+            { id: 'toggle-card-buttons-icon', action: () => this.toggleCardButtons() },
+            { id: 'toggle-card-click-icon', action: () => this.toggleCardClick() },
+            { id: 'pin-all-icon', action: () => this.pinAllWords() },
+            { id: 'unpin-all-icon', action: () => this.unpinAllWords() },
+            { id: 'show-archived-icon', action: () => this.showArchivedWords() },
+            { id: 'update-examples-icon', action: () => this.updateExistingWordsWithExamples() },
+            { id: 'start-quiz-icon', action: () => this.showQuizTypeSelection() },
+            { id: 'status-icon', action: () => this.showStatus() }
+        ];
+        
+        iconButtons.forEach(({ id, action }) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    action.call(this);
+                });
+            }
+        });
+        
+        if (this.sidebarToggle) {
+            this.sidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeSidebar();
+            });
+        }
+        
+
         if (this.startQuizBtn) this.startQuizBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.showQuizTypeSelection();
@@ -205,31 +280,10 @@ class VocabularyBoard {
         });
         if (this.sortSelect) this.sortSelect.addEventListener('change', () => this.renderWordsGrid());
         
-        // Settings
-        const settingsBtn = document.getElementById('settings');
-        if (settingsBtn) settingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.showSettings();
-        });
+        // URL search form
+        if (this.urlSearchForm) this.urlSearchForm.addEventListener('submit', (e) => this.handleUrlSearch(e));
         
-        const closeSettingsBtn = document.getElementById('close-settings');
-        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.closeSettingsModal();
-        });
-        
-        if (this.generateRandomNameBtn) this.generateRandomNameBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.generateRandomName();
-        });
-        if (this.saveSettingsBtn) this.saveSettingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.saveSettings();
-        });
-        if (this.resetSettingsBtn) this.resetSettingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.resetSettings();
-        });
+
         
         // Quiz type selection
         const closeQuizTypeBtn = document.getElementById('close-quiz-type');
@@ -296,11 +350,27 @@ class VocabularyBoard {
             });
         }
         
-        if (this.settingsModal) {
-            this.settingsModal.addEventListener('click', (e) => {
-                if (e.target === this.settingsModal) this.closeSettingsModal();
-            });
-        }
+
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+L: Toggle layout
+            if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                this.toggleLayout();
+            }
+            // Ctrl+D: Toggle dark mode
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                this.toggleDarkMode();
+            }
+            // Ctrl+B: Toggle card buttons
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                this.toggleCardButtons();
+            }
+
+        });
         
         // Text selection for word saving - Improved version
         document.addEventListener('mouseup', (e) => {
@@ -381,20 +451,10 @@ class VocabularyBoard {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'r' || e.key === 'R') {
-                e.preventDefault();
-                this.loadVocabulary();
-            }
             if (e.key === 'd' || e.key === 'D') {
                 if (e.ctrlKey) {
                     e.preventDefault();
                     this.toggleDarkMode();
-                }
-            }
-            if (e.key === 'a' || e.key === 'A') {
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    this.toggleAnimations();
                 }
             }
             if (e.key === 'q' || e.key === 'Q') {
@@ -404,6 +464,8 @@ class VocabularyBoard {
                 }
             }
         });
+        
+
     }
     
     async loadSettings() {
@@ -417,6 +479,12 @@ class VocabularyBoard {
                 'cardClickToggleEnabled',
                 'pdfAutoRedirect'
             ]);
+            
+            const syncResult = await chrome.storage.sync.get([
+                'currentLayout',
+                'cardButtonsVisible'
+            ]);
+            
             this.animationsEnabled = result.animationsEnabled !== false; // Default to true
             this.darkMode = result.darkMode || false; // Default to false
             this.allDefinitionsHidden = result.allDefinitionsHidden || false; // Default to false
@@ -424,6 +492,8 @@ class VocabularyBoard {
             this.currentView = result.currentView || 'board'; // Default to board view
             this.cardClickToggleEnabled = result.cardClickToggleEnabled !== false; // Default to true
             this.pdfAutoRedirect = result.pdfAutoRedirect !== false; // Default to true
+            this.currentLayout = syncResult.currentLayout || 'compact'; // Default to compact
+            this.cardButtonsVisible = syncResult.cardButtonsVisible !== false; // Default to true
             
             if (!this.animationsEnabled) {
                 document.body.classList.add('animations-disabled');
@@ -462,6 +532,33 @@ class VocabularyBoard {
             this.tableViewBtn.classList.toggle('active', this.currentView === 'table');
             this.wordsGrid.classList.toggle('active', this.currentView === 'board');
             this.wordsTable.classList.toggle('active', this.currentView === 'table');
+            
+            // Apply layout
+            document.body.classList.remove('compact-layout', 'classic-layout');
+            document.body.classList.add(`${this.currentLayout}-layout`);
+            
+            // Update layout button
+            if (this.layoutToggle) {
+                const icon = this.layoutToggle.querySelector('.layout-icon');
+                if (icon) {
+                    icon.textContent = this.currentLayout === 'compact' ? '📐' : '📏';
+                }
+            }
+            
+            // Apply card buttons visibility
+            if (!this.cardButtonsVisible) {
+                document.body.classList.add('cards-buttons-hidden');
+            }
+            
+                                // Update card buttons toggle button
+                    if (this.toggleCardButtonsBtn) {
+                        this.toggleCardButtonsBtn.textContent = this.cardButtonsVisible ? '🔘 Hide Card Buttons' : '🔘 Show Card Buttons';
+                    }
+                    
+                    // Update card click toggle button
+                    if (this.toggleCardClickBtn) {
+                        this.toggleCardClickBtn.textContent = this.cardClickToggleEnabled ? '🖱️ Disable Card Click' : '🖱️ Enable Card Click';
+                    }
         } catch (error) {
             console.error('Error loading settings:', error);
         }
@@ -555,14 +652,16 @@ class VocabularyBoard {
     }
     
     updateWeeklyScoreDisplay() {
-        this.weeklyScoreSpan.textContent = this.weeklyScore;
-        
-        // Add streak information
-        if (this.streakCount > 1) {
-            this.weeklyScoreSpan.innerHTML = `
-                ${this.weeklyScore} 
-                <span class="streak-info" title="Current streak: ${this.streakCount} days">🔥 ${this.streakCount}</span>
-            `;
+        if (this.weeklyScoreSpan) {
+            this.weeklyScoreSpan.textContent = this.weeklyScore;
+            
+            // Add streak information
+            if (this.streakCount > 1) {
+                this.weeklyScoreSpan.innerHTML = `
+                    ${this.weeklyScore} 
+                    <span class="streak-info" title="Current streak: ${this.streakCount} days">🔥 ${this.streakCount}</span>
+                `;
+            }
         }
     }
     
@@ -736,7 +835,7 @@ class VocabularyBoard {
                     ${word.word}
                 </div>
                 <div class="definition ${this.allDefinitionsHidden ? 'hidden' : ''}">${word.definition}</div>
-                ${word.example ? `<div class="example ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}" data-word="${word.word}">💬 ${word.example}</div>` : ''}
+                <!-- Example is hidden in board view for cleaner look -->
                 <div class="word-actions ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
                     <button class="edit-definition-btn" title="Edit definition" data-word="${word.word}">📝</button>
                     <button class="search-word-btn" title="Search word online" data-word="${word.word}">🔍</button>
@@ -1004,6 +1103,80 @@ class VocabularyBoard {
             await chrome.storage.local.set({ animationsEnabled: this.animationsEnabled });
         } catch (error) {
             console.error('Error saving animation preference:', error);
+        }
+    }
+    
+    async toggleLayout() {
+        this.currentLayout = this.currentLayout === 'compact' ? 'classic' : 'compact';
+        
+        // Apply layout
+        document.body.classList.remove('compact-layout', 'classic-layout');
+        document.body.classList.add(`${this.currentLayout}-layout`);
+        
+        // Update button text
+        if (this.layoutToggle) {
+            const icon = this.layoutToggle.querySelector('.layout-icon');
+            if (icon) {
+                icon.textContent = this.currentLayout === 'compact' ? '📐' : '📏';
+            }
+        }
+        
+        // Save setting
+        try {
+            await chrome.storage.sync.set({ currentLayout: this.currentLayout });
+        } catch (error) {
+            console.error('Error saving layout setting:', error);
+        }
+    }
+    
+    async toggleCardButtons() {
+        this.cardButtonsVisible = !this.cardButtonsVisible;
+        
+        // Apply to body for global toggle
+        if (this.cardButtonsVisible) {
+            document.body.classList.remove('cards-buttons-hidden');
+        } else {
+            document.body.classList.add('cards-buttons-hidden');
+        }
+        
+        // Update button text
+        if (this.toggleCardButtonsBtn) {
+            this.toggleCardButtonsBtn.textContent = this.cardButtonsVisible ? '🔘 Hide Card Buttons' : '🔘 Show Card Buttons';
+        }
+        
+        // Save setting
+        try {
+            await chrome.storage.sync.set({ cardButtonsVisible: this.cardButtonsVisible });
+        } catch (error) {
+            console.error('Error saving card buttons setting:', error);
+        }
+    }
+    
+    async toggleCardClick() {
+        this.cardClickToggleEnabled = !this.cardClickToggleEnabled;
+        
+        // Update button text
+        if (this.toggleCardClickBtn) {
+            this.toggleCardClickBtn.textContent = this.cardClickToggleEnabled ? '🖱️ Disable Card Click' : '🖱️ Enable Card Click';
+        }
+        
+        // Save setting
+        try {
+            await chrome.storage.local.set({ cardClickToggleEnabled: this.cardClickToggleEnabled });
+        } catch (error) {
+            console.error('Error saving card click setting:', error);
+        }
+    }
+    
+    toggleSidebar() {
+        if (this.sidebarMenu) {
+            this.sidebarMenu.classList.toggle('open');
+        }
+    }
+    
+    closeSidebar() {
+        if (this.sidebarMenu) {
+            this.sidebarMenu.classList.remove('open');
         }
     }
     
@@ -1738,17 +1911,45 @@ class VocabularyBoard {
             // Toggle the global state
             this.allDefinitionsHidden = !this.allDefinitionsHidden;
             
+            // If turning on Hide All Definitions, turn off Hide All Words
+            if (this.allDefinitionsHidden) {
+                this.allWordsHidden = false;
+            }
+            
             // Update button text
             if (this.toggleAllDefinitionsBtn) {
                 this.toggleAllDefinitionsBtn.textContent = this.allDefinitionsHidden ? 
                     '👁️ Show All Definitions' : '🙈 Hide All Definitions';
             }
             
+            // Update sidebar icon button text
+            const toggleIconBtn = document.getElementById('toggle-all-definitions-icon');
+            if (toggleIconBtn) {
+                toggleIconBtn.textContent = this.allDefinitionsHidden ? '👁️' : '🙈';
+                toggleIconBtn.title = this.allDefinitionsHidden ? 'Show All Definitions' : 'Hide All Definitions';
+            }
+            
+            // Update Hide All Words button text
+            const toggleWordsBtn = document.getElementById('toggle-all-words');
+            if (toggleWordsBtn) {
+                toggleWordsBtn.textContent = this.allWordsHidden ? '👁️ Show All Words' : '🙈 Hide All Words';
+            }
+            
+            // Update Hide All Words icon button text
+            const toggleWordsIconBtn = document.getElementById('toggle-all-words-icon');
+            if (toggleWordsIconBtn) {
+                toggleWordsIconBtn.textContent = this.allWordsHidden ? '👁️' : '🙈';
+                toggleWordsIconBtn.title = this.allWordsHidden ? 'Show All Words' : 'Hide All Words';
+            }
+            
             // Re-render to apply changes
             this.renderWordsGrid();
             
             // Save state to storage
-            await chrome.storage.local.set({ allDefinitionsHidden: this.allDefinitionsHidden });
+            await chrome.storage.local.set({ 
+                allDefinitionsHidden: this.allDefinitionsHidden,
+                allWordsHidden: this.allWordsHidden 
+            });
             
             const action = this.allDefinitionsHidden ? 'hidden' : 'shown';
             this.showSuccess(`All definitions ${action}`);
@@ -1880,107 +2081,7 @@ class VocabularyBoard {
         }
     }
 
-    showSettings() {
-        // Load current settings
-        this.userNameInput.value = this.getUserName();
-        this.settingsDarkModeToggle.checked = this.darkMode;
-        this.animationsToggle.checked = this.animationsEnabled;
-        this.streakBonusToggle.checked = this.streakBonusEnabled;
-        this.cardClickToggle.checked = this.cardClickToggleEnabled;
-        
-        this.settingsModal.classList.add('show');
-    }
-    
-    closeSettingsModal() {
-        this.settingsModal.classList.remove('show');
-    }
-    
-    generateRandomName() {
-        const randomIndex = Math.floor(Math.random() * this.randomNames.length);
-        const randomName = this.randomNames[randomIndex];
-        this.userNameInput.value = randomName;
-    }
-    
-    async saveSettings() {
-        try {
-            // Save user name
-            const newUserName = this.userNameInput.value.trim();
-            if (newUserName) {
-                localStorage.setItem('userName', newUserName);
-            }
-            
-            // Save other settings
-            this.darkMode = this.settingsDarkModeToggle.checked;
-            this.animationsEnabled = this.animationsToggle.checked;
-            this.streakBonusEnabled = this.streakBonusToggle.checked;
-            this.cardClickToggleEnabled = this.cardClickToggle.checked;
-            this.pdfAutoRedirect = this.pdfAutoRedirectToggle.checked;
-            
-            await chrome.storage.local.set({
-                darkMode: this.darkMode,
-                animationsEnabled: this.animationsEnabled,
-                streakBonusEnabled: this.streakBonusEnabled,
-                cardClickToggleEnabled: this.cardClickToggleEnabled,
-                pdfAutoRedirect: this.pdfAutoRedirect
-            });
-            
-            // Apply settings
-            this.applyDarkMode();
-            this.applyAnimations();
-            this.saveStreakData();
-            
-            // Close modal
-            this.closeSettingsModal();
-            
-            // Show success message
-            alert('Settings saved successfully!');
-            
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            alert('Error saving settings. Please try again.');
-        }
-    }
-    
-    async resetSettings() {
-        if (confirm('Are you sure you want to reset all settings to default?')) {
-            try {
-                // Reset to defaults
-                this.darkMode = false;
-                this.animationsEnabled = true;
-                this.streakBonusEnabled = true;
-                this.cardClickToggleEnabled = true;
-                
-                // Clear user name
-                localStorage.removeItem('userName');
-                this.userNameInput.value = '';
-                
-                // Save defaults
-                await chrome.storage.local.set({
-                    darkMode: false,
-                    animationsEnabled: true,
-                    streakBonusEnabled: true,
-                    cardClickToggleEnabled: true
-                });
-                
-                // Apply settings
-                this.applyDarkMode();
-                this.applyAnimations();
-                this.saveStreakData();
-                
-                // Update UI
-                this.settingsDarkModeToggle.checked = false;
-                this.animationsToggle.checked = true;
-                this.streakBonusToggle.checked = true;
-                this.cardClickToggle.checked = true;
-                
-                alert('Settings reset to default!');
-                
-            } catch (error) {
-                console.error('Error resetting settings:', error);
-                alert('Error resetting settings. Please try again.');
-            }
-        }
-    }
+
     
     applyDarkMode() {
         if (this.darkMode) {
@@ -1996,6 +2097,73 @@ class VocabularyBoard {
         } else {
             document.body.classList.remove('animations-disabled');
         }
+    }
+    
+    startTimeUpdate() {
+        const updateTime = () => {
+            const now = new Date();
+            
+            // Update time
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Update date
+            const dateString = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            if (this.currentTimeSpan) {
+                this.currentTimeSpan.textContent = timeString;
+            }
+            if (this.currentDateSpan) {
+                this.currentDateSpan.textContent = dateString;
+            }
+        };
+        
+        // Update immediately
+        updateTime();
+        
+        // Update every minute
+        setInterval(updateTime, 60000);
+    }
+    
+    handleUrlSearch(event) {
+        event.preventDefault();
+        
+        const query = this.urlSearchInput.value.trim();
+        if (!query) return;
+        
+        let url;
+        
+        // Check if it's a valid URL
+        if (query.includes('.') && !query.includes(' ') && 
+            (query.startsWith('http://') || query.startsWith('https://') || 
+             query.startsWith('www.') || !query.startsWith('http'))) {
+            
+            // It looks like a URL
+            if (query.startsWith('http://') || query.startsWith('https://')) {
+                url = query;
+            } else if (query.startsWith('www.')) {
+                url = 'https://' + query;
+            } else {
+                url = 'https://www.' + query;
+            }
+        } else {
+            // It's a search query
+            url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+        }
+        
+        // Open in new tab
+        chrome.tabs.create({ url: url });
+        
+        // Clear the input
+        this.urlSearchInput.value = '';
     }
     
     showSuccess(message) {
@@ -2336,31 +2504,74 @@ class VocabularyBoard {
                     return;
                 }
                 
+                // Debounce card clicks to prevent rapid toggling
+                const currentTime = Date.now();
+                if (currentTime - this.lastCardClickTime < this.cardClickDebounceDelay) {
+                    console.log('Card click debounced, ignoring rapid click');
+                    return;
+                }
+                this.lastCardClickTime = currentTime;
+                
                 const word = card.dataset.word;
                 console.log('Card clicked directly:', word);
                 
-                // Toggle definition or word visibility based on current state
-                if (this.allDefinitionsHidden) {
-                    const definition = card.querySelector('.definition');
-                    if (definition) {
-                        definition.classList.toggle('hidden');
-                    }
-                } else if (this.allWordsHidden) {
-                    const wordTextElement = card.querySelector('.word-text');
-                    if (wordTextElement) {
-                        wordTextElement.classList.toggle('hidden');
-                    }
-                } else {
-                    // Default behavior: toggle definition
-                    const definition = card.querySelector('.definition');
-                    if (definition) {
-                        definition.classList.toggle('hidden');
+                // Toggle visibility based on current state
+                const definition = card.querySelector('.definition');
+                const wordText = card.querySelector('.word-text');
+                const wordActions = card.querySelector('.word-actions');
+                const wordMeta = card.querySelector('.word-meta');
+                
+                if (definition && wordText) {
+                    const isDefinitionVisible = !definition.classList.contains('hidden');
+                    const isWordVisible = !wordText.classList.contains('hidden');
+                    
+                    if (this.allWordsHidden) {
+                        // Hide All Words mode: definition is visible, word is hidden
+                        if (isDefinitionVisible && !isWordVisible) {
+                            // Show both word and definition
+                            wordText.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        } else if (isDefinitionVisible && isWordVisible) {
+                            // Hide word, show only definition
+                            wordText.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                            definition.classList.remove('hidden'); // Ensure definition stays visible
+                        }
+                    } else if (this.allDefinitionsHidden) {
+                        // Hide All Definitions mode: word is visible, definition is hidden
+                        if (isWordVisible && !isDefinitionVisible) {
+                            // Show both word and definition
+                            definition.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        } else if (isWordVisible && isDefinitionVisible) {
+                            // Hide definition, show only word
+                            definition.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                        }
+                    } else {
+                        // Normal mode: both are visible
+                        if (isWordVisible && isDefinitionVisible) {
+                            // Hide definition, show only word
+                            definition.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                        } else {
+                            // Show both word and definition
+                            definition.classList.remove('hidden');
+                            wordText.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        }
                     }
                 }
             });
         });
         
-        // Add event listeners for example editing (both board and table view)
+        // Add event listeners for example editing (table view only)
         const exampleElements = document.querySelectorAll('.example');
         exampleElements.forEach(example => {
             example.addEventListener('click', (e) => {
@@ -2475,25 +2686,68 @@ class VocabularyBoard {
                     return;
                 }
                 
+                // Debounce table row clicks to prevent rapid toggling
+                const currentTime = Date.now();
+                if (currentTime - this.lastCardClickTime < this.cardClickDebounceDelay) {
+                    console.log('Table row click debounced, ignoring rapid click');
+                    return;
+                }
+                this.lastCardClickTime = currentTime;
+                
                 const word = row.dataset.word;
                 console.log('Table row clicked directly:', word);
                 
-                // Toggle definition or word visibility based on current state
-                if (this.allDefinitionsHidden) {
-                    const definition = row.querySelector('.definition');
-                    if (definition) {
-                        definition.classList.toggle('hidden');
-                    }
-                } else if (this.allWordsHidden) {
-                    const wordTextElement = row.querySelector('.word-text');
-                    if (wordTextElement) {
-                        wordTextElement.classList.toggle('hidden');
-                    }
-                } else {
-                    // Default behavior: toggle definition
-                    const definition = row.querySelector('.definition');
-                    if (definition) {
-                        definition.classList.toggle('hidden');
+                // Toggle visibility based on current state
+                const definition = row.querySelector('.definition');
+                const wordText = row.querySelector('.word-text');
+                const wordActions = row.querySelector('.word-actions');
+                const wordMeta = row.querySelector('.word-meta');
+                
+                if (definition && wordText) {
+                    const isDefinitionVisible = !definition.classList.contains('hidden');
+                    const isWordVisible = !wordText.classList.contains('hidden');
+                    
+                    if (this.allWordsHidden) {
+                        // Hide All Words mode: definition is visible, word is hidden
+                        if (isDefinitionVisible && !isWordVisible) {
+                            // Show both word and definition
+                            wordText.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        } else if (isDefinitionVisible && isWordVisible) {
+                            // Hide word, show only definition
+                            wordText.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                            definition.classList.remove('hidden'); // Ensure definition stays visible
+                        }
+                    } else if (this.allDefinitionsHidden) {
+                        // Hide All Definitions mode: word is visible, definition is hidden
+                        if (isWordVisible && !isDefinitionVisible) {
+                            // Show both word and definition
+                            definition.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        } else if (isWordVisible && isDefinitionVisible) {
+                            // Hide definition, show only word
+                            definition.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                        }
+                    } else {
+                        // Normal mode: both are visible
+                        if (isWordVisible && isDefinitionVisible) {
+                            // Hide definition, show only word
+                            definition.classList.add('hidden');
+                            if (wordActions) wordActions.classList.add('hidden');
+                            if (wordMeta) wordMeta.classList.add('hidden');
+                        } else {
+                            // Show both word and definition
+                            definition.classList.remove('hidden');
+                            wordText.classList.remove('hidden');
+                            if (wordActions) wordActions.classList.remove('hidden');
+                            if (wordMeta) wordMeta.classList.remove('hidden');
+                        }
                     }
                 }
             });
@@ -2522,38 +2776,58 @@ class VocabularyBoard {
     }
     
     async toggleAllWords() {
-        this.allWordsHidden = !this.allWordsHidden;
-        
-        const wordTexts = document.querySelectorAll('.word-text');
-        const examples = document.querySelectorAll('.example');
-        const wordActions = document.querySelectorAll('.word-actions');
-        const wordMeta = document.querySelectorAll('.word-meta');
-        const toggleBtn = document.getElementById('toggle-all-words');
-        
-        wordTexts.forEach(text => {
-            text.classList.toggle('hidden', this.allWordsHidden);
-        });
-        
-        // Hide/show examples when words are hidden
-        examples.forEach(example => {
-            example.classList.toggle('hidden', this.allWordsHidden);
-        });
-        
-        // Hide/show word actions and meta when words are hidden
-        if (this.allDefinitionsHidden || this.allWordsHidden) {
-            wordActions.forEach(action => action.classList.add('hidden'));
-            wordMeta.forEach(meta => meta.classList.add('hidden'));
-        } else {
-            wordActions.forEach(action => action.classList.remove('hidden'));
-            wordMeta.forEach(meta => meta.classList.remove('hidden'));
+        try {
+            // Toggle the global state
+            this.allWordsHidden = !this.allWordsHidden;
+            
+            // If turning on Hide All Words, turn off Hide All Definitions
+            if (this.allWordsHidden) {
+                this.allDefinitionsHidden = false;
+            }
+            
+            // Update button text
+            if (this.toggleAllWordsBtn) {
+                this.toggleAllWordsBtn.textContent = this.allWordsHidden ? 
+                    '👁️ Show All Words' : '🙈 Hide All Words';
+            }
+            
+            // Update sidebar icon button text
+            const toggleIconBtn = document.getElementById('toggle-all-words-icon');
+            if (toggleIconBtn) {
+                toggleIconBtn.textContent = this.allWordsHidden ? '👁️' : '🙈';
+                toggleIconBtn.title = this.allWordsHidden ? 'Show All Words' : 'Hide All Words';
+            }
+            
+            // Update Hide All Definitions button text
+            const toggleDefinitionsBtn = document.getElementById('toggle-all-definitions');
+            if (toggleDefinitionsBtn) {
+                toggleDefinitionsBtn.textContent = this.allDefinitionsHidden ? 
+                    '👁️ Show All Definitions' : '🙈 Hide All Definitions';
+            }
+            
+            // Update Hide All Definitions icon button text
+            const toggleDefinitionsIconBtn = document.getElementById('toggle-all-definitions-icon');
+            if (toggleDefinitionsIconBtn) {
+                toggleDefinitionsIconBtn.textContent = this.allDefinitionsHidden ? '👁️' : '🙈';
+                toggleDefinitionsIconBtn.title = this.allDefinitionsHidden ? 'Show All Definitions' : 'Hide All Definitions';
+            }
+            
+            // Re-render to apply changes
+            this.renderWordsGrid();
+            
+            // Save state to storage
+            await chrome.storage.local.set({ 
+                allWordsHidden: this.allWordsHidden,
+                allDefinitionsHidden: this.allDefinitionsHidden 
+            });
+            
+            const action = this.allWordsHidden ? 'hidden' : 'shown';
+            this.showSuccess(`All words ${action}`);
+            
+        } catch (error) {
+            console.error('Error toggling all words:', error);
+            this.showError('Failed to toggle all words');
         }
-        
-        if (toggleBtn) {
-            toggleBtn.textContent = this.allWordsHidden ? '👁️ Show All Words' : '🙈 Hide All Words';
-        }
-        
-        // Save state
-        await chrome.storage.local.set({ allWordsHidden: this.allWordsHidden });
     }
     
     async togglePin(wordText) {
@@ -2836,22 +3110,22 @@ class VocabularyBoard {
         }
     }
 
+
+
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing VocabularyBoard');
-    setTimeout(() => {
-        new VocabularyBoard();
-    }, 100); // Small delay to ensure DOM is fully ready
+    if (!window.vocabularyBoard) {
+        window.vocabularyBoard = new VocabularyBoard();
+    }
 });
 
 // Also initialize when window loads (for dynamic content)
 window.addEventListener('load', () => {
     console.log('Window loaded, checking if VocabularyBoard needs initialization');
-    setTimeout(() => {
-        if (!window.vocabularyBoard) {
-            window.vocabularyBoard = new VocabularyBoard();
-        }
-    }, 200); // Longer delay for dynamic content
+    if (!window.vocabularyBoard) {
+        window.vocabularyBoard = new VocabularyBoard();
+    }
 }); 
