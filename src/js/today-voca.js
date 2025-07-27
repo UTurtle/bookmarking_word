@@ -782,31 +782,53 @@ class TodayVoca {
                     const srsInfo = entry.srsStats ? 
                         `<span>Accuracy: ${(entry.srsStats.averageAccuracy * 100).toFixed(1)}%</span>` : '';
                     
-                    const statusText = entry.completed ? '완료' : `진행중 (${entry.progress || 0}/${entry.totalWords || entry.words.length})`;
+                    const statusText = entry.completed ? 'Completed' : `In Progress (${entry.progress || 0}/${entry.totalWords || entry.words.length})`;
                     const statusClass = entry.completed ? 'completed' : 'in-progress';
                     
                     // 타임스탬프가 있으면 사용, 없으면 날짜 사용
                     const displayDate = entry.timestamp ? this.formatDateTime(entry.timestamp) : this.formatDate(entry.date);
                     
                     historyItem.innerHTML = `
-                        <div class="history-date">${displayDate}</div>
-                        <div class="history-stats">
-                            <span>Words: ${entry.words.length}</span>
-                            <span>Time: ${entry.timeSpent}</span>
-                            <span class="status ${statusClass}">${statusText}</span>
-                            ${srsInfo}
+                        <div class="history-content">
+                            <div class="history-date">${displayDate}</div>
+                            <div class="history-stats">
+                                <span>Words: ${entry.words.length}</span>
+                                <span>Time: ${entry.timeSpent}</span>
+                                <span class="status ${statusClass}">${statusText}</span>
+                                ${srsInfo}
+                            </div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="history-remove-btn" title="Remove this history entry">🗑️</button>
                         </div>
                     `;
-                    historyItem.addEventListener('click', () => this.viewHistoryDetail(entry));
+                    
+                    // 히스토리 항목 클릭 이벤트
+                    const historyContent = historyItem.querySelector('.history-content');
+                    historyContent.addEventListener('click', () => this.viewHistoryDetail(entry));
+                    
+                    // 제거 버튼 클릭 이벤트
+                    const removeBtn = historyItem.querySelector('.history-remove-btn');
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.removeHistoryEntry(entry);
+                    });
+                    
                     this.historyList.appendChild(historyItem);
                 });
             }
             
-            this.historyModalOverlay.classList.remove('hidden');
-        } catch (error) {
-            console.error('Error showing history:', error);
+                    this.historyModalOverlay.classList.remove('hidden');
+        
+        // 모든 히스토리 제거 버튼 이벤트 리스너 추가
+        const clearAllHistoryBtn = document.getElementById('clear-all-history-btn');
+        if (clearAllHistoryBtn) {
+            clearAllHistoryBtn.addEventListener('click', () => this.clearAllHistory());
         }
+    } catch (error) {
+        console.error('Error showing history:', error);
     }
+}
     
     hideHistory() {
         this.historyModalOverlay.classList.add('hidden');
@@ -842,7 +864,7 @@ class TodayVoca {
                         <div class="stat-item">
                             <span class="stat-label">Status:</span>
                             <span class="stat-value ${entry.completed ? 'completed' : 'in-progress'}">
-                                ${entry.completed ? '완료' : `진행중 (${entry.progress || 0}/${entry.totalWords || entry.words.length})`}
+                                ${entry.completed ? 'Completed' : `In Progress (${entry.progress || 0}/${entry.totalWords || entry.words.length})`}
                             </span>
                         </div>
                     </div>
@@ -854,10 +876,12 @@ class TodayVoca {
                                 const definition = wordData ? wordData.definition : 'Definition not found';
                                 return `
                                     <div class="history-word-item" data-word="${word}">
-                                        <div class="word-info">
+                                        <div class="word-content">
                                             <span class="word-number">${index + 1}.</span>
-                                            <span class="word-text">${word}</span>
-                                            <span class="word-definition">${definition}</span>
+                                            <div class="word-text-definition">
+                                                <span class="word-text">${word}</span>
+                                                <span class="word-definition">${definition}</span>
+                                            </div>
                                         </div>
                                         <div class="word-actions">
                                             <button class="action-btn pin-btn" title="Pin" onclick="this.closest('.history-word-item').dispatchEvent(new CustomEvent('pinWord', {detail: '${word}'}))">📌</button>
@@ -950,6 +974,78 @@ class TodayVoca {
             });
             chrome.storage.local.set({ todayVocaHistory: history });
         });
+    }
+
+    async removeHistoryEntry(entry) {
+        try {
+            const result = await chrome.storage.local.get(['todayVocaHistory']);
+            let history = result.todayVocaHistory || [];
+            
+            // 해당 항목 제거
+            history = history.filter(item => {
+                if (entry.timestamp && item.timestamp) {
+                    return item.timestamp !== entry.timestamp;
+                } else if (entry.date && item.date) {
+                    return item.date !== entry.date;
+                }
+                return true;
+            });
+            
+            await chrome.storage.local.set({ todayVocaHistory: history });
+            this.showSuccess('History entry removed successfully');
+            
+            // 히스토리 목록 새로고침
+            this.showHistory();
+        } catch (error) {
+            console.error('Error removing history entry:', error);
+            this.showError('Failed to remove history entry');
+        }
+    }
+
+    async clearAllHistory() {
+        try {
+            // 확인 모달 표시
+            const confirmModal = document.createElement('div');
+            confirmModal.className = 'confirm-modal-overlay';
+            confirmModal.innerHTML = `
+                <div class="confirm-modal">
+                    <h3>🗑️ Clear All History</h3>
+                    <p>Are you sure you want to clear all Today Voca history?</p>
+                    <p><strong>This action cannot be undone!</strong></p>
+                    <div class="confirm-actions">
+                        <button class="confirm-btn" id="confirm-clear-all">🗑️ Clear All</button>
+                        <button class="cancel-btn" id="cancel-clear-all">❌ Cancel</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(confirmModal);
+            
+            // 이벤트 리스너 추가
+            const confirmBtn = document.getElementById('confirm-clear-all');
+            const cancelBtn = document.getElementById('cancel-clear-all');
+            
+            confirmBtn.addEventListener('click', async () => {
+                await chrome.storage.local.remove(['todayVocaHistory']);
+                this.showSuccess('All history cleared successfully');
+                document.body.removeChild(confirmModal);
+                this.hideHistory();
+            });
+            
+            cancelBtn.addEventListener('click', () => {
+                document.body.removeChild(confirmModal);
+            });
+            
+            // 모달 외부 클릭 시 닫기
+            confirmModal.addEventListener('click', (e) => {
+                if (e.target === confirmModal) {
+                    document.body.removeChild(confirmModal);
+                }
+            });
+        } catch (error) {
+            console.error('Error clearing all history:', error);
+            this.showError('Failed to clear all history');
+        }
     }
     
     showSuccess(message) {

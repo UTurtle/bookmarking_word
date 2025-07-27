@@ -188,19 +188,7 @@ class VocabularyBoard {
             this.updateExistingWordsWithExamples();
         });
         
-        // Clear history button
-        const clearHistoryBtn = document.getElementById('clear-history');
-        if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.clearHistory();
-        });
-        
-        // Clear all history button
-        const clearAllHistoryBtn = document.getElementById('clear-all-history');
-        if (clearAllHistoryBtn) clearAllHistoryBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.clearAllHistory();
-        });
+
         
         // Today Voca button
         const startTodayVocaBtn = document.getElementById('start-today-voca');
@@ -261,8 +249,6 @@ class VocabularyBoard {
             { id: 'refresh-words-icon', action: () => this.loadVocabulary() },
             { id: 'export-words-icon', action: () => this.exportWords() },
             { id: 'import-words-icon', action: () => this.importWords() },
-            { id: 'clear-history-icon', action: () => this.clearHistory() },
-            { id: 'clear-all-history-icon', action: () => this.clearAllHistory() },
             { id: 'toggle-all-definitions-icon', action: () => this.toggleAllDefinitions() },
             { id: 'toggle-all-words-icon', action: () => this.toggleAllWords() },
             { id: 'toggle-card-buttons-icon', action: () => this.toggleCardButtons() },
@@ -3188,118 +3174,7 @@ class VocabularyBoard {
         }
     }
 
-    async clearHistory() {
-        try {
-            // 확인 모달 표시
-            const content = `
-                <div class="clear-history-modal">
-                    <h3>🗑️ Clear History</h3>
-                    <p>This will clear the learning history (wrong counts, correct counts, last reviewed dates) for all words.</p>
-                    <p><strong>Note:</strong> Words and definitions will remain, only the learning progress will be reset.</p>
-                    <div class="clear-history-actions">
-                        <button class="btn btn-danger confirm-clear-history-btn">🗑️ Clear History</button>
-                        <button class="btn btn-secondary cancel-clear-history-btn">❌ Cancel</button>
-                    </div>
-                </div>
-            `;
-            
-            this.showWordModal(content, 'clear-history');
-            
-            // 이벤트 리스너 추가
-            const confirmBtn = document.querySelector('.confirm-clear-history-btn');
-            const cancelBtn = document.querySelector('.cancel-clear-history-btn');
-            
-            confirmBtn.addEventListener('click', async () => {
-                // 히스토리 데이터 클리어
-                this.vocabulary.forEach(word => {
-                    word.wrongCount = 0;
-                    word.correctCount = 0;
-                    word.lastReviewed = null;
-                    word.reviewCount = 0;
-                    word.streakCount = 0;
-                    word.lastStreakDate = null;
-                });
-                
-                await chrome.storage.local.set({ vocabulary: this.vocabulary });
-                
-                // 퀴즈 히스토리도 클리어
-                await chrome.storage.local.remove(['quizHistory', 'weeklyScore', 'streakCount', 'lastQuizDate']);
-                
-                this.renderWordsGrid();
-                this.updateStats();
-                this.updateProgress();
-                
-                document.querySelector('.word-modal').remove();
-                this.showSuccess('Learning history cleared successfully!');
-            });
-            
-            cancelBtn.addEventListener('click', () => {
-                document.querySelector('.word-modal').remove();
-            });
-            
-        } catch (error) {
-            console.error('Error clearing history:', error);
-            this.showError('Failed to clear history');
-        }
-    }
 
-    async clearAllHistory() {
-        try {
-            // 확인 모달 표시
-            const content = `
-                <div class="clear-all-history-modal">
-                    <h3>🗑️🗑️ Clear All History</h3>
-                    <p><strong>⚠️ WARNING:</strong> This will completely clear ALL data including:</p>
-                    <ul>
-                        <li>All vocabulary words and definitions</li>
-                        <li>Learning history and progress</li>
-                        <li>Quiz history and scores</li>
-                        <li>Archived words</li>
-                        <li>All settings and preferences</li>
-                    </ul>
-                    <p><strong>This action cannot be undone!</strong></p>
-                    <div class="clear-all-history-actions">
-                        <button class="btn btn-danger confirm-clear-all-history-btn">🗑️🗑️ Clear Everything</button>
-                        <button class="btn btn-secondary cancel-clear-all-history-btn">❌ Cancel</button>
-                    </div>
-                </div>
-            `;
-            
-            this.showWordModal(content, 'clear-all-history');
-            
-            // 이벤트 리스너 추가
-            const confirmBtn = document.querySelector('.confirm-clear-all-history-btn');
-            const cancelBtn = document.querySelector('.cancel-clear-all-history-btn');
-            
-            confirmBtn.addEventListener('click', async () => {
-                // 모든 데이터 클리어
-                await chrome.storage.local.clear();
-                await chrome.storage.sync.clear();
-                
-                // 로컬 변수들도 리셋
-                this.vocabulary = [];
-                this.quizHistory = [];
-                this.weeklyScore = 0;
-                this.streakCount = 0;
-                this.lastQuizDate = null;
-                
-                this.renderWordsGrid();
-                this.updateStats();
-                this.updateProgress();
-                
-                document.querySelector('.word-modal').remove();
-                this.showSuccess('All data cleared successfully!');
-            });
-            
-            cancelBtn.addEventListener('click', () => {
-                document.querySelector('.word-modal').remove();
-            });
-            
-        } catch (error) {
-            console.error('Error clearing all history:', error);
-            this.showError('Failed to clear all history');
-        }
-    }
 
 
 
