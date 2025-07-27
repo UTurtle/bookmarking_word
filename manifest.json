@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Vocabulary Learning Note",
   "version": "1.0.0",
-  "description": "Advanced vocabulary learning tool with quiz features, progress tracking, and smart word management. Save words while browsing and review them with interactive quizzes.",
+  "description": "Save words while browsing and learn with interactive quizzes. Features progress tracking and smart word management.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },

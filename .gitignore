@@ -7,7 +7,9 @@ yarn-error.log*
 # Build outputs
 build/
 dist/
+extension-package/
 *.zip
+*.py
 
 # Development files
 *.log
@@ -34,6 +36,8 @@ Thumbs.db
 *.temp
 .cache/
 Feature_Work.md
+marquee-promotion-demo.html
+small-promotion-demo.html
 
 # PDF files (large)
 *.pdf

@@ -496,7 +496,7 @@ class VocabularyBoard {
                 'pdfAutoRedirect'
             ]);
             
-            const syncResult = await chrome.storage.sync.get([
+            const syncResult = await chrome.storage.local.get([
                 'currentLayout',
                 'cardButtonsVisible'
             ]);
@@ -1178,7 +1178,7 @@ class VocabularyBoard {
         
         // Save setting
         try {
-            await chrome.storage.sync.set({ currentLayout: this.currentLayout });
+            await chrome.storage.local.set({ currentLayout: this.currentLayout });
         } catch (error) {
             console.error('Error saving layout setting:', error);
         }
@@ -1201,7 +1201,7 @@ class VocabularyBoard {
         
         // Save setting
         try {
-            await chrome.storage.sync.set({ cardButtonsVisible: this.cardButtonsVisible });
+            await chrome.storage.local.set({ cardButtonsVisible: this.cardButtonsVisible });
         } catch (error) {
             console.error('Error saving card buttons setting:', error);
         }
