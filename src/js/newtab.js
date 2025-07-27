@@ -101,7 +101,7 @@ class VocabularyBoard {
         this.closeStatusBtn = document.getElementById('close-status');
         this.currentStreakSpan = document.getElementById('current-streak');
         this.bestStreakSpan = document.getElementById('best-streak');
-        this.todayReviewedCountSpan = document.getElementById('today-reviewed-count');
+
         this.todayQuizzesCountSpan = document.getElementById('today-quizzes-count');
         this.todayTotalScoreSpan = document.getElementById('today-total-score');
         
@@ -1677,18 +1677,18 @@ class VocabularyBoard {
             
             const currentStreak = result.streakCount || 0;
             const bestStreak = result.bestStreak || 0;
-            const todayReviewed = result.todayReviewed || 0;
+
             const todayQuizzes = result.todayQuizzes || 0;
             const todayTotalScore = result.todayTotalScore || 0;
             
             // Update status display
             if (this.currentStreakSpan) this.currentStreakSpan.textContent = currentStreak;
             if (this.bestStreakSpan) this.bestStreakSpan.textContent = bestStreak;
-            if (this.todayReviewedCountSpan) this.todayReviewedCountSpan.textContent = todayReviewed;
+
             if (this.todayQuizzesCountSpan) this.todayQuizzesCountSpan.textContent = todayQuizzes;
             if (this.todayTotalScoreSpan) this.todayTotalScoreSpan.textContent = todayTotalScore;
             
-            console.log('Status displayed:', { currentStreak, bestStreak, todayReviewed, todayQuizzes, todayTotalScore });
+            console.log('Status displayed:', { currentStreak, bestStreak, todayQuizzes, todayTotalScore });
         } catch (error) {
             console.error('Error loading status:', error);
         }

@@ -656,7 +656,7 @@ class TodayVoca {
         textarea.focus();
     }
     
-    completeTodayVoca() {
+    async completeTodayVoca() {
         if (this.todayWords.length === 0) {
             this.showEmptyState();
             return;
@@ -666,6 +666,9 @@ class TodayVoca {
         
         // Today Voca에 나온 단어들의 출현 횟수 업데이트
         this.updateTodayVocaCounts();
+        
+        // 통계 업데이트 (Total Score에 반영)
+        await this.updateTodayVocaStatistics();
         
         this.saveTodayVocaToStorage();
         this.saveTodayVocaHistory();
@@ -725,6 +728,56 @@ class TodayVoca {
         return `${diffMinutes} min`;
     }
     
+    calculateTodayVocaScore() {
+        // Today Voca 점수 계산
+        // 완료된 단어 수 * 10점 + SRS 정확도 보너스
+        const completedWords = this.todayWords.length;
+        const srsStats = this.srsSystem.calculateSRSStats(this.todayWords);
+        const accuracyBonus = Math.round(srsStats.averageAccuracy * 50); // 정확도 100%일 때 50점 보너스
+        
+        const baseScore = completedWords * 10;
+        const totalScore = baseScore + accuracyBonus;
+        
+        return {
+            baseScore,
+            accuracyBonus,
+            totalScore
+        };
+    }
+
+    async updateTodayVocaStatistics() {
+        try {
+            // 기존 통계 로드
+            const result = await chrome.storage.local.get(['todayQuizzes', 'todayTotalScore']);
+            let todayQuizzes = result.todayQuizzes || 0;
+            let todayTotalScore = result.todayTotalScore || 0;
+            
+            // Today Voca 점수 계산
+            const scoreData = this.calculateTodayVocaScore();
+            
+            // Today Voca를 퀴즈로 간주하여 카운트 증가
+            todayQuizzes += 1;
+            todayTotalScore += scoreData.totalScore;
+            
+            // 통계 저장
+            await chrome.storage.local.set({
+                todayQuizzes: todayQuizzes,
+                todayTotalScore: todayTotalScore
+            });
+            
+            console.log('Today Voca statistics updated:', {
+                todayQuizzes,
+                todayTotalScore,
+                scoreData
+            });
+            
+            return scoreData;
+        } catch (error) {
+            console.error('Error updating today voca statistics:', error);
+            return null;
+        }
+    }
+
     async saveTodayVocaHistory() {
         try {
             const result = await chrome.storage.local.get(['todayVocaHistory']);
@@ -732,6 +785,9 @@ class TodayVoca {
             
             const srsStats = this.srsSystem.calculateSRSStats(this.todayWords);
             const now = new Date();
+            
+            // 점수 계산
+            const scoreData = this.calculateTodayVocaScore();
             
             const historyEntry = {
                 id: `today-voca-${now.getTime()}`,
@@ -743,6 +799,7 @@ class TodayVoca {
                 learningTime: now.toISOString(),
                 progress: this.currentWordIndex,
                 totalWords: this.todayWords.length,
+                score: scoreData.totalScore,
                 srsStats: {
                     totalWords: srsStats.totalWords,
                     wordsWithSRS: srsStats.wordsWithSRS,
@@ -794,6 +851,7 @@ class TodayVoca {
                             <div class="history-stats">
                                 <span>Words: ${entry.words.length}</span>
                                 <span>Time: ${entry.timeSpent}</span>
+                                <span>Score: ${entry.score || 0}</span>
                                 <span class="status ${statusClass}">${statusText}</span>
                                 ${srsInfo}
                             </div>
@@ -860,6 +918,10 @@ class TodayVoca {
                         <div class="stat-item">
                             <span class="stat-label">Time:</span>
                             <span class="stat-value">${entry.timeSpent}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Score:</span>
+                            <span class="stat-value">${entry.score || 0}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Status:</span>
