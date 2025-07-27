@@ -394,3 +394,125 @@ body {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 } 
+
+/* Settings section */
+.settings-section {
+    margin-top: 20px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+.setting-item {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.setting-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.toggle-switch {
+    width: 40px;
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-switch.active {
+    background: #667eea;
+}
+
+.toggle-slider {
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+}
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(20px);
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+/* Permissions section */
+.permissions-section {
+    margin-top: 20px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+.permissions-section h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.permission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 10px;
+}
+
+.permission-info {
+    flex: 1;
+}
+
+.permission-info strong {
+    display: block;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.permission-desc {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-small:hover {
+    background: #5a6fd8;
+}
+
+.btn-small:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+} 

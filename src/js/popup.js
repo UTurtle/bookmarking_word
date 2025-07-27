@@ -40,6 +40,10 @@ class VocabularyPopup {
         // Today Voca settings
         this.todayVocaWordsCountInput = document.getElementById('today-voca-words-count');
         this.saveWordsCountBtn = document.getElementById('save-words-count-btn');
+
+        // Permission request buttons
+        this.requestPdfPermissionsBtn = document.getElementById('request-pdf-permissions');
+        this.requestTabsPermissionsBtn = document.getElementById('request-tabs-permissions');
     }
     
     bindEvents() {
@@ -76,6 +80,14 @@ class VocabularyPopup {
         this.customShortcutInput.addEventListener('input', (e) => {
             this.formatShortcutInput(e.target);
         });
+
+        // Permission request buttons
+        if (this.requestPdfPermissionsBtn) {
+            this.requestPdfPermissionsBtn.addEventListener('click', () => this.requestPdfPermissions());
+        }
+        if (this.requestTabsPermissionsBtn) {
+            this.requestTabsPermissionsBtn.addEventListener('click', () => this.requestTabsPermission());
+        }
     }
     
     async loadVocabulary() {
@@ -176,6 +188,129 @@ class VocabularyPopup {
         } catch (error) {
             console.error('Error loading settings:', error);
         }
+    }
+
+    // Update permission request buttons based on current permissions
+    async updatePermissionButtons() {
+        try {
+            const permissions = await chrome.permissions.getAll();
+            
+            // Update PDF permissions button
+            const pdfPermissionsBtn = document.getElementById('request-pdf-permissions');
+            if (pdfPermissionsBtn) {
+                const hasPdfPermissions = permissions.permissions.includes('webNavigation') && 
+                                        permissions.permissions.includes('contextMenus');
+                pdfPermissionsBtn.textContent = hasPdfPermissions ? 'Permission Granted' : 'Request Permission';
+                pdfPermissionsBtn.disabled = hasPdfPermissions;
+                pdfPermissionsBtn.style.background = hasPdfPermissions ? '#28a745' : '#667eea';
+            }
+            
+            // Update tabs permissions button
+            const tabsPermissionsBtn = document.getElementById('request-tabs-permissions');
+            if (tabsPermissionsBtn) {
+                const hasTabsPermissions = permissions.permissions.includes('tabs');
+                tabsPermissionsBtn.textContent = hasTabsPermissions ? 'Permission Granted' : 'Request Permission';
+                tabsPermissionsBtn.disabled = hasTabsPermissions;
+                tabsPermissionsBtn.style.background = hasTabsPermissions ? '#28a745' : '#667eea';
+            }
+        } catch (error) {
+            console.error('Error updating permission buttons:', error);
+        }
+    }
+
+    // Request PDF-related permissions
+    async requestPdfPermissions() {
+        try {
+            const granted = await chrome.permissions.request({
+                permissions: ['webNavigation', 'contextMenus']
+            });
+            
+            if (granted) {
+                console.log('PDF permissions granted');
+                
+                // Check if permissions are actually available
+                const permissions = await chrome.permissions.getAll();
+                const hasWebNavigation = permissions.permissions.includes('webNavigation');
+                const hasContextMenus = permissions.permissions.includes('contextMenus');
+                
+                if (hasWebNavigation && hasContextMenus) {
+                    this.updatePermissionButtons();
+                    this.showMessage('PDF features permission granted!', 'success');
+                    
+                    // Reload extension to activate new permissions
+                    setTimeout(() => {
+                        chrome.runtime.reload();
+                    }, 1000);
+                } else {
+                    this.showMessage('Permission granted but not yet activated. Please reload the extension.', 'warning');
+                }
+            } else {
+                console.log('PDF permissions denied');
+                this.showMessage('PDF features permission denied.', 'error');
+            }
+        } catch (error) {
+            console.error('Error requesting PDF permissions:', error);
+            this.showMessage('Error occurred while requesting permission.', 'error');
+        }
+    }
+
+    // Request tabs permission
+    async requestTabsPermission() {
+        try {
+            const granted = await chrome.permissions.request({
+                permissions: ['tabs']
+            });
+            
+            if (granted) {
+                console.log('Tabs permission granted');
+                
+                // Check if permission is actually available
+                const permissions = await chrome.permissions.getAll();
+                const hasTabs = permissions.permissions.includes('tabs');
+                
+                if (hasTabs) {
+                    this.updatePermissionButtons();
+                    this.showMessage('New tab override permission granted!', 'success');
+                    
+                    // Reload extension to activate new permissions
+                    setTimeout(() => {
+                        chrome.runtime.reload();
+                    }, 1000);
+                } else {
+                    this.showMessage('Permission granted but not yet activated. Please reload the extension.', 'warning');
+                }
+            } else {
+                console.log('Tabs permission denied');
+                this.showMessage('New tab override permission denied.', 'error');
+            }
+        } catch (error) {
+            console.error('Error requesting tabs permission:', error);
+            this.showMessage('Error occurred while requesting permission.', 'error');
+        }
+    }
+
+    // Show message to user
+    showMessage(message, type = 'info') {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${type}`;
+        messageDiv.textContent = message;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9rem;
+            z-index: 1000;
+            background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
     }
     
     filterVocabulary() {

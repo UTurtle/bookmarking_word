@@ -97,7 +97,55 @@ This extension includes PDF.js integration for enhanced PDF reading:
 ## 🔒 Privacy & Security
 
 - **Local Storage**: All data stored locally in Chrome
-- **Permissions**: This extension requires "tabs" permission to access the currently active tab for word saving functionality. This permission is necessary to read selected text from web pages when you press Ctrl+Shift+S. No browsing history or personal data is collected or transmitted.
+- **No Server Required**: No data transmitted to external servers
+- **HTTPS Encryption**: All external API communications encrypted
+- **Optional Permissions**: Advanced features require explicit user permission
+- **Privacy Policy**: Full compliance with Chrome Web Store policies
+
+### Permission Management
+
+The extension uses a minimal permission approach:
+
+#### Required Permissions
+- **storage**: Store vocabulary data locally
+- **activeTab**: Read selected text from current tab
+- **scripting**: Execute content scripts for word selection
+
+#### Optional Permissions
+- **tabs**: Replace new tab page with vocabulary board
+- **webNavigation**: Auto-redirect PDF files to PDF.js viewer
+- **contextMenus**: Add PDF link right-click menu
+
+Users can request optional permissions through the extension popup interface.
+
+### Data Collection
+
+This extension collects only the minimum data necessary for functionality:
+
+#### Collected Data
+- **Web History**: URL information for PDF redirection (optional)
+- **User Activity**: Text selection and interaction data
+- **Website Content**: Selected text for vocabulary saving
+
+#### Not Collected
+- Personally identifiable information
+- Health information
+- Financial and payment information
+- Authentication information
+- Personal communications
+- Location information
+
+### Limited Use Compliance
+
+This extension complies with Chrome Web Store's Limited Use requirements:
+
+- ✅ **Permitted Uses**: Vocabulary learning and related features only
+- ✅ **No Advertising**: No personalized or targeted ads
+- ✅ **No Data Sale**: User data is never sold to third parties
+- ✅ **No Human Review**: No human access to user data
+- ✅ **No Credit Assessment**: Data not used for credit or loan purposes
+
+For complete privacy information, see [Privacy Policy](privacy-policy.md).
 
 ## 🔮 Future Work
 
