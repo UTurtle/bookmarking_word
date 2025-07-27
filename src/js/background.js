@@ -247,19 +247,23 @@ function initializePdfRedirect() {
 }
 
 // Handle context menu clicks
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  try {
-    if (info.menuItemId === "openPdfInViewer") {
-      const pdfUrl = info.linkUrl;
-      if (pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf')) {
-        const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(pdfUrl);
-        chrome.tabs.create({ url: pdfViewerUrl });
+try {
+  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    try {
+      if (info.menuItemId === "openPdfInViewer") {
+        const pdfUrl = info.linkUrl;
+        if (pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf')) {
+          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(pdfUrl);
+          chrome.tabs.create({ url: pdfViewerUrl });
+        }
       }
+    } catch (error) {
+      console.error('Error in contextMenus.onClicked listener:', error);
     }
-  } catch (error) {
-    console.error('Error in contextMenus.onClicked listener:', error);
-  }
-});
+  });
+} catch (error) {
+  console.log('Context menus API not available, skipping listener setup');
+}
 
 // Function to validate if text is a valid English word
 function isValidWord(text) {
@@ -438,73 +442,97 @@ async function saveWordToStorage(word, definition, url) {
 }
 
 // Handle keyboard shortcut
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === "save-word") {
-    try {
-      // Get the active tab
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      // Execute script to get selected text from content script
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: () => {
-          return window.getSelection().toString().trim();
+try {
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command === "save-word") {
+      try {
+        // Get the active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        // Execute script to get selected text from content script
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          function: () => {
+            return window.getSelection().toString().trim();
+          }
+        });
+        
+        const selectedText = results[0].result;
+        
+        if (selectedText) {
+          await saveSelectedWord(selectedText);
         }
-      });
-      
-      const selectedText = results[0].result;
-      
-      if (selectedText) {
-        await saveSelectedWord(selectedText);
+      } catch (error) {
+        console.error("Error handling keyboard shortcut:", error);
       }
-    } catch (error) {
-      console.error("Error handling keyboard shortcut:", error);
     }
-  }
-});
+  });
+} catch (error) {
+  console.log('Commands API not available, skipping keyboard shortcut setup');
+}
 
 // Note: Message listener is now handled in the combined listener above
 
 // Initialize optional features on startup
-chrome.runtime.onStartup.addListener(() => {
-  console.log('Extension startup - initializing features');
-  initializeOptionalFeaturesIfAvailable();
-});
+try {
+  chrome.runtime.onStartup.addListener(() => {
+    console.log('Extension startup - initializing features');
+    // Add a small delay to ensure all APIs are available
+    setTimeout(() => {
+      initializeOptionalFeaturesIfAvailable();
+    }, 100);
+  });
+} catch (error) {
+  console.log('Runtime startup API not available');
+}
 
 // Initialize optional features on installation
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log('Extension installed/updated - initializing features', details);
-  initializeOptionalFeaturesIfAvailable();
-});
+try {
+  chrome.runtime.onInstalled.addListener((details) => {
+    console.log('Extension installed/updated - initializing features', details);
+    // Add a small delay to ensure all APIs are available
+    setTimeout(() => {
+      initializeOptionalFeaturesIfAvailable();
+    }, 100);
+  });
+} catch (error) {
+  console.log('Runtime installed API not available');
+}
+
+
 
 // Note: Chrome Extension Service Workers don't use self.addEventListener
 // They use chrome.runtime.onInstalled and chrome.runtime.onStartup instead
 
 // Keep service worker alive and handle messages
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Message received:', request);
-  
-  // Always respond to keep service worker alive
-  if (request.action === "ping" || request.action === "keepAlive") {
-    sendResponse({ status: "alive", timestamp: Date.now() });
-    return true;
-  }
-  
-  if (request.action === "saveWord") {
-    // Call saveSelectedWord with the word from content script
-    saveSelectedWord(request.word).then(() => {
-      sendResponse({ success: true });
-    }).catch((error) => {
-      console.error("Error in message handler:", error);
-      sendResponse({ success: false, error: error.message });
-    });
-    return true; // Keep message channel open for async response
-  }
-  
-  if (request.action === "wakeUp") {
-    // Simple status check
-    console.log('Service worker status check');
-    sendResponse({ status: "active", timestamp: Date.now() });
-    return true;
-  }
-});
+try {
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log('Message received:', request);
+    
+    // Always respond to keep service worker alive
+    if (request.action === "ping" || request.action === "keepAlive") {
+      sendResponse({ status: "alive", timestamp: Date.now() });
+      return true;
+    }
+    
+    if (request.action === "saveWord") {
+      // Call saveSelectedWord with the word from content script
+      saveSelectedWord(request.word).then(() => {
+        sendResponse({ success: true });
+      }).catch((error) => {
+        console.error("Error in message handler:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // Keep message channel open for async response
+    }
+    
+    if (request.action === "wakeUp") {
+      // Simple status check
+      console.log('Service worker status check');
+      sendResponse({ status: "active", timestamp: Date.now() });
+      return true;
+    }
+  });
+} catch (error) {
+  console.log('Runtime message API not available, skipping message listener setup');
+}
