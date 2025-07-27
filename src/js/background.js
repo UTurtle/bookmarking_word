@@ -477,10 +477,7 @@ try {
 try {
   chrome.runtime.onStartup.addListener(() => {
     console.log('Extension startup - initializing features');
-    // Add a small delay to ensure all APIs are available
-    setTimeout(() => {
-      initializeOptionalFeaturesIfAvailable();
-    }, 100);
+    initializeOptionalFeaturesIfAvailable();
   });
 } catch (error) {
   console.log('Runtime startup API not available');
@@ -490,16 +487,11 @@ try {
 try {
   chrome.runtime.onInstalled.addListener((details) => {
     console.log('Extension installed/updated - initializing features', details);
-    // Add a small delay to ensure all APIs are available
-    setTimeout(() => {
-      initializeOptionalFeaturesIfAvailable();
-    }, 100);
+    initializeOptionalFeaturesIfAvailable();
   });
 } catch (error) {
   console.log('Runtime installed API not available');
 }
-
-
 
 // Note: Chrome Extension Service Workers don't use self.addEventListener
 // They use chrome.runtime.onInstalled and chrome.runtime.onStartup instead
