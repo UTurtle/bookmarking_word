@@ -769,7 +769,8 @@ async function saveSelectedWord() {
     try {
       const response = await chrome.runtime.sendMessage({
         action: 'saveWord',
-        word: textToSave
+        word: textToSave,
+        url: window.location.href
       });
       
       if (response && response.success) {

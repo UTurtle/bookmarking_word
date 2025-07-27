@@ -333,11 +333,8 @@ function isValidWord(text) {
 }
 
 // Function to save selected word
-async function saveSelectedWord(selectedText) {
+async function saveSelectedWord(selectedText, tabUrl = null) {
   try {
-    // Get the active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
     if (selectedText && selectedText.trim()) {
       const word = selectedText.trim();
       
@@ -354,7 +351,7 @@ async function saveSelectedWord(selectedText) {
       const definition = await getWordDefinition(wordLower);
       
       // Save word to storage
-      await saveWordToStorage(wordLower, definition, tab.url);
+      await saveWordToStorage(wordLower, definition, tabUrl);
       
       // Show notification
       chrome.action.setBadgeText({ text: "✓" });
@@ -370,8 +367,38 @@ async function saveSelectedWord(selectedText) {
 // Function to get word definition from API
 async function getWordDefinition(word) {
   try {
+    // Additional validation for the word
+    if (!word || word.length < 2 || word.length > 20) {
+      console.log('Invalid word length:', word);
+      return "Invalid word";
+    }
+    
+    // Check if word contains only valid characters
+    if (!/^[a-zA-Z\-']+$/.test(word)) {
+      console.log('Invalid word characters:', word);
+      return "Invalid word format";
+    }
+    
+    console.log('Fetching definition for word:', word);
+    
     // First try the regular dictionary API
-    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    
+    if (!response.ok) {
+      console.log(`Dictionary API returned ${response.status} for word: ${word}`);
+      // Try alternative API
+      const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
+      const stopWordsData = await stopWordsResponse.json();
+      
+      if (stopWordsData && stopWordsData.length > 0) {
+        const stopWordEntry = stopWordsData[0];
+        if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
+          return stopWordEntry.defs[0];
+        }
+      }
+      return "Definition not found";
+    }
+    
     const data = await response.json();
     
     if (Array.isArray(data) && data.length > 0) {
@@ -392,7 +419,7 @@ async function getWordDefinition(word) {
     
     // If definition not found, try stop words API
     console.log(`Definition not found for "${word}", trying stop words API`);
-    const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${word}&md=d&max=1`);
+    const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
     const stopWordsData = await stopWordsResponse.json();
     
     if (stopWordsData && stopWordsData.length > 0) {
@@ -446,21 +473,37 @@ try {
   chrome.commands.onCommand.addListener(async (command) => {
     if (command === "save-word") {
       try {
-        // Get the active tab
+        // Get the active tab using activeTab permission
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        // Check if the tab URL is accessible
+        if (tab.url && tab.url.startsWith('chrome://')) {
+          console.log('Cannot access content from chrome:// pages:', tab.url);
+          return;
+        }
+        
+        // For chrome-extension:// pages, try to access but handle gracefully
+        if (tab.url && tab.url.startsWith('chrome-extension://')) {
+          console.log('Attempting to access extension page:', tab.url);
+        }
         
         // Execute script to get selected text from content script
         const results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           function: () => {
-            return window.getSelection().toString().trim();
+            return {
+              selectedText: window.getSelection().toString().trim(),
+              url: window.location.href
+            };
           }
         });
         
-        const selectedText = results[0].result;
+        const result = results[0].result;
+        const selectedText = result.selectedText;
+        const tabUrl = result.url;
         
         if (selectedText) {
-          await saveSelectedWord(selectedText);
+          await saveSelectedWord(selectedText, tabUrl);
         }
       } catch (error) {
         console.error("Error handling keyboard shortcut:", error);
@@ -509,7 +552,7 @@ try {
     
     if (request.action === "saveWord") {
       // Call saveSelectedWord with the word from content script
-      saveSelectedWord(request.word).then(() => {
+      saveSelectedWord(request.word, request.url).then(() => {
         sendResponse({ success: true });
       }).catch((error) => {
         console.error("Error in message handler:", error);

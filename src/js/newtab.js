@@ -1499,13 +1499,35 @@ class VocabularyBoard {
         chrome.windows.onRemoved.addListener(handleWindowRemoved);
     }
     
-    startTodayVoca() {
+    async startTodayVoca() {
         // Today Voca 창 열기
         const todayVocaUrl = chrome.runtime.getURL('src/html/today-voca.html');
-        chrome.tabs.create({
-            url: todayVocaUrl,
-            active: true
-        });
+        
+        try {
+            // Try to update current tab first (uses activeTab permission)
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (currentTab) {
+                await chrome.tabs.update(currentTab.id, { url: todayVocaUrl });
+                console.log('Current tab updated to Today Voca');
+            } else {
+                // Fallback to creating new tab if current tab not found
+                chrome.tabs.create({
+                    url: todayVocaUrl,
+                    active: true
+                });
+            }
+        } catch (error) {
+            console.error('Error in startTodayVoca:', error);
+            // Fallback to creating new tab if update fails
+            try {
+                chrome.tabs.create({
+                    url: todayVocaUrl,
+                    active: true
+                });
+            } catch (fallbackError) {
+                console.error('Fallback tab creation also failed:', fallbackError);
+            }
+        }
     }
     
     // Quiz questions are now generated in the separate quiz window
@@ -2523,7 +2545,7 @@ class VocabularyBoard {
         return true;
     }
 
-    searchWordOnline(word) {
+    async searchWordOnline(word) {
         // Strong prevention of duplicate execution
         if (this.searchingWord) {
             console.log('Search already in progress, preventing duplicate for:', word);
@@ -2544,15 +2566,29 @@ class VocabularyBoard {
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(word + ' definition')}`;
         
         try {
-            chrome.tabs.create({ url: searchUrl }, (tab) => {
-                if (chrome.runtime.lastError) {
-                    console.error('Error creating tab:', chrome.runtime.lastError);
-                } else {
-                    console.log('Tab created successfully:', tab.id);
-                }
-            });
+            // Try to update current tab first (uses activeTab permission)
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (currentTab) {
+                await chrome.tabs.update(currentTab.id, { url: searchUrl });
+                console.log('Current tab updated successfully');
+            } else {
+                // Fallback to creating new tab if current tab not found
+                chrome.tabs.create({ url: searchUrl }, (tab) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error creating tab:', chrome.runtime.lastError);
+                    } else {
+                        console.log('Tab created successfully:', tab.id);
+                    }
+                });
+            }
         } catch (error) {
             console.error('Error in searchWordOnline:', error);
+            // Fallback to creating new tab if update fails
+            try {
+                chrome.tabs.create({ url: searchUrl });
+            } catch (fallbackError) {
+                console.error('Fallback tab creation also failed:', fallbackError);
+            }
         }
         
         // Reset flag after a longer delay

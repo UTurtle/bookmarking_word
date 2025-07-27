@@ -561,7 +561,16 @@ class VocabularyPopup {
     async openMainBoard() {
         try {
             const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
-            await chrome.tabs.create({ url: newtabUrl });
+            
+            // Try to update current tab first (uses activeTab permission)
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (currentTab) {
+                await chrome.tabs.update(currentTab.id, { url: newtabUrl });
+                console.log('Current tab updated to main board');
+            } else {
+                // Fallback to creating new tab if current tab not found
+                await chrome.tabs.create({ url: newtabUrl });
+            }
         } catch (error) {
             console.error('Error opening main board:', error);
             this.showError('Failed to open vocabulary board');
