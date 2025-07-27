@@ -104,7 +104,7 @@ class VocabularyPopup {
             }
             
             // Load animation setting
-            const animationsEnabled = result.animationsEnabled !== false; // Default to true
+            const animationsEnabled = result.animationsEnabled || false; // Default to false
             if (animationsEnabled) {
                 this.animationToggle.classList.add('active');
             } else {

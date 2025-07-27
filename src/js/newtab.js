@@ -485,7 +485,7 @@ class VocabularyBoard {
                 'cardButtonsVisible'
             ]);
             
-            this.animationsEnabled = result.animationsEnabled !== false; // Default to true
+            this.animationsEnabled = result.animationsEnabled || false; // Default to false
             this.darkMode = result.darkMode || false; // Default to false
             this.allDefinitionsHidden = result.allDefinitionsHidden || false; // Default to false
             this.allWordsHidden = result.allWordsHidden || false; // Default to false
