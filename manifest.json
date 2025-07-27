@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Vocabulary Learning Note",
   "version": "0.1.0",
-  "description": "Save words while browsing and learn with interactive quizzes. Features progress tracking and smart word management. Selected words are sent to external APIs to fetch definitions and examples.",
+  "description": "Select and save words from any webpage. Automatic definition lookup via APIs. Interactive quizzes and progress tracking.",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
