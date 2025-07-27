@@ -77,7 +77,9 @@
 - **storage**: Store word data locally in your browser
 - **activeTab**: Read selected text from current tab to save words
 - **scripting**: Execute content scripts for word selection functionality
-- **host_permissions**: Access to dictionary APIs (api.dictionaryapi.dev, api.datamuse.com) to fetch word definitions and examples
+- **host_permissions**: 
+  - Access to all HTTPS websites (`https://*/*`) to enable word saving functionality on any webpage users visit
+  - Access to dictionary APIs (api.dictionaryapi.dev, api.datamuse.com) to fetch word definitions, relate words, opposite words, and examples
 
 ### 6.2 Optional Permissions
 - **tabs**: New tab page replacement functionality
@@ -131,6 +133,6 @@ This extension collects the following user data categories as required by Chrome
 - Location information
 
 ### Data Usage Confirmation:
-✅ We do not sell or transfer user data to third parties except for approved use cases (dictionary API lookup)
-✅ We do not use or transmit user data for purposes unrelated to the extension's dedicated purpose (vocabulary learning)
-✅ We do not use or transmit user data for credit assessment or loans 
+- We do not sell or transfer user data to third parties except for approved use cases (dictionary API lookup)
+- We do not use or transmit user data for purposes unrelated to the extension's dedicated purpose (vocabulary learning)
+- We do not use or transmit user data for credit assessment or loans 
