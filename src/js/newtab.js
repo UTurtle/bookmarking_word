@@ -1091,6 +1091,9 @@ class VocabularyBoard {
             <div class="empty-state">
                 <h3>No vocabulary words yet</h3>
                 <p>Start browsing and save words using <strong>Ctrl+Shift+S</strong>, or click "Add Sample" to see how it works!</p>
+                <div class="invalid-word-notice">
+                    <p><strong>⚠️ Invalid Word Notice:</strong> Please do not save words containing sensitive information. Most invalid words are blocked automatically, but English words that contain sensitive information may still be transmitted to API servers.</p>
+                </div>
             </div>
         `;
         
@@ -2425,6 +2428,13 @@ class VocabularyBoard {
                 return;
             }
             
+            // Check if it's a valid word using the same validation as content script
+            if (!this.isValidWord(cleanWord)) {
+                this.showError(`"${cleanWord}" is not a valid word`);
+                this.hideWordSaveIndicator();
+                return;
+            }
+            
             // Check if word already exists
             const existingWord = this.vocabulary.find(w => w.word.toLowerCase() === cleanWord.toLowerCase());
             if (existingWord) {
@@ -2444,6 +2454,73 @@ class VocabularyBoard {
             console.error('Error saving word:', error);
             this.showError('Failed to save word');
         }
+    }
+
+    // Add the same word validation function as in content.js
+    isValidWord(text) {
+        if (!text || text.length === 0) return false;
+        
+        // Check for any whitespace (space, tab, newline, etc.)
+        if (/\s/.test(text)) return false;
+        
+        // Check for any digits
+        if (/\d/.test(text)) return false;
+        
+        // Check for any special characters (except hyphen and apostrophe for English words)
+        if (/[^a-zA-Z\-']/.test(text)) return false;
+        
+        // Length check
+        if (text.length < 2 || text.length > 20) return false;
+        
+        // Check for sensitive information patterns
+        const sensitivePatterns = [
+            /password/i,
+            /passwd/i,
+            /pwd/i,
+            /secret/i,
+            /private/i,
+            /confidential/i,
+            /token/i,
+            /key/i,
+            /api[_-]?key/i,
+            /auth[_-]?token/i,
+            /session[_-]?id/i,
+            /cookie/i,
+            /credit[_-]?card/i,
+            /card[_-]?number/i,
+            /ssn/i,
+            /social[_-]?security/i,
+            /phone[_-]?number/i,
+            /email[_-]?address/i,
+            /address/i,
+            /zip[_-]?code/i,
+            /postal[_-]?code/i,
+            /bank[_-]?account/i,
+            /account[_-]?number/i,
+            /routing[_-]?number/i,
+            /swift[_-]?code/i,
+            /iban/i,
+            /pin/i,
+            /cvv/i,
+            /cvc/i,
+            /expiry/i,
+            /expiration/i
+        ];
+        
+        // Check if text contains sensitive patterns
+        for (const pattern of sensitivePatterns) {
+            if (pattern.test(text)) {
+                console.log('Sensitive information detected, blocking save:', text);
+                return false;
+            }
+        }
+        
+        // Final check: must be pure English word (letters, hyphens, apostrophes only)
+        if (!/^[a-zA-Z\-']+$/.test(text)) {
+            return false;
+        }
+        
+        return true;
     }
 
     searchWordOnline(word) {

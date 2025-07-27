@@ -642,6 +642,10 @@ function showSaveIndicator() {
   // Check if selected text contains sensitive information
   if (!isValidWord(selectedText)) {
     showSensitiveInfoWarning(selectedText);
+    // Hide any existing indicator
+    if (indicator) {
+      indicator.style.display = 'none';
+    }
     return;
   }
 
@@ -701,7 +705,15 @@ async function saveSelectedWord() {
     return;
   }
   
-  // Always show success message first for better UX
+  // Validate that it's a valid English word
+  if (!isValidWord(textToSave)) {
+    console.log('Word validation failed in saveSelectedWord:', textToSave);
+    showSensitiveInfoWarning(textToSave);
+    // Invalid words are not saved or transmitted to any server
+    return;
+  }
+  
+  // Show success message only for valid words
   showSaveSuccess();
   
   try {
@@ -843,7 +855,7 @@ function showSensitiveInfoWarning(text) {
     opacity: 0.95;
   `;
   
-  warningMsg.innerHTML = `⚠️ Sensitive information detected. Cannot save "${text.substring(0, 20)}${text.length > 20 ? '...' : ''}"`;
+  warningMsg.innerHTML = `⚠️ "${text.substring(0, 20)}${text.length > 20 ? '...' : ''}" is not a valid word`;
   
   // Add click to dismiss
   warningMsg.addEventListener('click', () => {
@@ -854,68 +866,70 @@ function showSensitiveInfoWarning(text) {
   
   document.body.appendChild(warningMsg);
   
-  // Auto remove after 3 seconds
   setTimeout(() => {
     if (warningMsg.parentNode) {
       warningMsg.parentNode.removeChild(warningMsg);
     }
-  }, 3000);
+  }, 150);
+  
 }
 
 function isValidWord(text) {
     if (!text || text.length === 0) return false;
     
     // Check for any whitespace (space, tab, newline, etc.)
-    if (/\s/.test(text)) return false;
+    if (/\s/.test(text)) {
+        return false;
+    }
     
     // Check for any digits
-    if (/\d/.test(text)) return false;
+    if (/\d/.test(text)) {
+        return false;
+    }
     
     // Check for any special characters (except hyphen and apostrophe for English words)
-    if (/[^a-zA-Z\-']/.test(text)) return false;
+    if (/[^a-zA-Z\-']/.test(text)) {
+        return false;
+    }
     
     // Length check
-    if (text.length < 2 || text.length > 20) return false;
+    if (text.length < 2 || text.length > 20) {
+        return false;
+    }
     
-    // Check for sensitive information patterns
+    // Check for sensitive information patterns (more specific to avoid blocking common words)
     const sensitivePatterns = [
-        /password/i,
-        /passwd/i,
-        /pwd/i,
-        /secret/i,
-        /private/i,
-        /confidential/i,
-        /token/i,
-        /key/i,
-        /api[_-]?key/i,
-        /auth[_-]?token/i,
-        /session[_-]?id/i,
-        /cookie/i,
-        /credit[_-]?card/i,
-        /card[_-]?number/i,
-        /ssn/i,
-        /social[_-]?security/i,
-        /phone[_-]?number/i,
-        /email[_-]?address/i,
-        /address/i,
-        /zip[_-]?code/i,
-        /postal[_-]?code/i,
-        /bank[_-]?account/i,
-        /account[_-]?number/i,
-        /routing[_-]?number/i,
-        /swift[_-]?code/i,
-        /iban/i,
-        /pin/i,
-        /cvv/i,
-        /cvc/i,
-        /expiry/i,
-        /expiration/i
+        /^password$/i,
+        /^passwd$/i,
+        /^pwd$/i,
+        /^secret$/i,
+        /^private$/i,
+        /^confidential$/i,
+        /^api[_-]?key$/i,
+        /^auth[_-]?token$/i,
+        /^session[_-]?id$/i,
+        /^credit[_-]?card$/i,
+        /^card[_-]?number$/i,
+        /^ssn$/i,
+        /^social[_-]?security$/i,
+        /^phone[_-]?number$/i,
+        /^email[_-]?address$/i,
+        /^zip[_-]?code$/i,
+        /^postal[_-]?code$/i,
+        /^bank[_-]?account$/i,
+        /^account[_-]?number$/i,
+        /^routing[_-]?number$/i,
+        /^swift[_-]?code$/i,
+        /^iban$/i,
+        /^cvv$/i,
+        /^cvc$/i,
+        /^expiry$/i,
+        /^expiration$/i
     ];
     
     // Check if text contains sensitive patterns
     for (const pattern of sensitivePatterns) {
         if (pattern.test(text)) {
-            console.log('Sensitive information detected, blocking save:', text);
             return false;
         }
     }
@@ -936,6 +950,12 @@ function highlightSelectedText() {
     const selectedText = range.toString().trim();
     
     if (!selectedText) return;
+    
+    // Validate that it's a valid English word
+    if (!isValidWord(selectedText)) {
+        console.log('Word validation failed in highlight mode:', selectedText);
+        return;
+    }
     
     // Check if selection contains HTML elements (already highlighted)
     const fragment = range.cloneContents();
@@ -1029,6 +1049,12 @@ function highlightSelectedText() {
 
 function applyFallbackHighlight(range) {
     const rect = range.getBoundingClientRect();
+    
+    // Validate that it's a valid English word
+    if (!isValidWord(selectedText)) {
+        console.log('Word validation failed in fallback highlight:', selectedText);
+        return;
+    }
     
     const highlightElement = document.createElement('div');
     highlightElement.className = 'vocab-highlight-fallback';
@@ -1246,6 +1272,13 @@ async function saveWordToVocabulary(word) {
     
     const cleanWord = word.trim();
     console.log('Cleaned word:', cleanWord);
+    
+    // Validate that it's a valid English word
+    if (!isValidWord(cleanWord)) {
+        console.log('Word validation failed:', cleanWord);
+        // Invalid words are not saved or transmitted to any server
+        return false;
+    }
     
     try {
         // Check if chrome API is available

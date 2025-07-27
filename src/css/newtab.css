@@ -1793,6 +1793,31 @@ body.dark-mode .stats-info {
     opacity: 0.9;
 }
 
+.invalid-word-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.invalid-word-notice p {
+    color: #856404;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+body.dark-mode .invalid-word-notice {
+    background: #2d3748;
+    border-color: #4a5568;
+}
+
+body.dark-mode .invalid-word-notice p {
+    color: #e2e8f0;
+}
+
 .btn {
     padding: 8px 16px;
     border: none;

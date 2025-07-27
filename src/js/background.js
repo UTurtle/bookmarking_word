@@ -261,6 +261,73 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+// Function to validate if text is a valid English word
+function isValidWord(text) {
+    if (!text || text.length === 0) return false;
+    
+    // Check for any whitespace (space, tab, newline, etc.)
+    if (/\s/.test(text)) return false;
+    
+    // Check for any digits
+    if (/\d/.test(text)) return false;
+    
+    // Check for any special characters (except hyphen and apostrophe for English words)
+    if (/[^a-zA-Z\-']/.test(text)) return false;
+    
+    // Length check
+    if (text.length < 2 || text.length > 20) return false;
+    
+    // Check for sensitive information patterns
+    const sensitivePatterns = [
+        /password/i,
+        /passwd/i,
+        /pwd/i,
+        /secret/i,
+        /private/i,
+        /confidential/i,
+        /token/i,
+        /key/i,
+        /api[_-]?key/i,
+        /auth[_-]?token/i,
+        /session[_-]?id/i,
+        /cookie/i,
+        /credit[_-]?card/i,
+        /card[_-]?number/i,
+        /ssn/i,
+        /social[_-]?security/i,
+        /phone[_-]?number/i,
+        /email[_-]?address/i,
+        /address/i,
+        /zip[_-]?code/i,
+        /postal[_-]?code/i,
+        /bank[_-]?account/i,
+        /account[_-]?number/i,
+        /routing[_-]?number/i,
+        /swift[_-]?code/i,
+        /iban/i,
+        /pin/i,
+        /cvv/i,
+        /cvc/i,
+        /expiry/i,
+        /expiration/i
+    ];
+    
+    // Check if text contains sensitive patterns
+    for (const pattern of sensitivePatterns) {
+        if (pattern.test(text)) {
+            console.log('Sensitive information detected, blocking save:', text);
+            return false;
+        }
+    }
+    
+    // Final check: must be pure English word (letters, hyphens, apostrophes only)
+    if (!/^[a-zA-Z\-']+$/.test(text)) {
+        return false;
+    }
+    
+    return true;
+}
+
 // Function to save selected word
 async function saveSelectedWord(selectedText) {
   try {
@@ -268,13 +335,22 @@ async function saveSelectedWord(selectedText) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
     if (selectedText && selectedText.trim()) {
-      const word = selectedText.trim().toLowerCase();
+      const word = selectedText.trim();
+      
+      // Validate that it's a valid English word
+      if (!isValidWord(word)) {
+        console.log('Word validation failed in background script:', word);
+        // Invalid words are not saved or transmitted to any server
+        return;
+      }
+      
+      const wordLower = word.toLowerCase();
       
       // Get word definition
-      const definition = await getWordDefinition(word);
+      const definition = await getWordDefinition(wordLower);
       
       // Save word to storage
-      await saveWordToStorage(word, definition, tab.url);
+      await saveWordToStorage(wordLower, definition, tab.url);
       
       // Show notification
       chrome.action.setBadgeText({ text: "✓" });

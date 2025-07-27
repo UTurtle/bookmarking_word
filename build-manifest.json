@@ -1,6 +1,6 @@
 {
   "name": "Vocabulary Bookmarker",
-  "version": "1.1.0",
+  "version": "0.1.0",
   "description": "Advanced vocabulary learning tool with quiz features, progress tracking, and smart word management. Save words while browsing and review them with interactive quizzes.",
   "files": [
     "manifest.json",
