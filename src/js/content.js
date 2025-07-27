@@ -638,6 +638,12 @@ function showSaveIndicator() {
     console.log('[Content Script] No valid text to show indicator for');
     return;
   }
+  
+  // Check if selected text contains sensitive information
+  if (!isValidWord(selectedText)) {
+    showSensitiveInfoWarning(selectedText);
+    return;
+  }
 
   let displayText = selectedText;
   if (selectedText.length > 50) {
@@ -812,26 +818,114 @@ function showSaveSuccess() {
   hideSaveIndicator(); // Hide popup
 }
 
+function showSensitiveInfoWarning(text) {
+  // Create warning message
+  const warningMsg = document.createElement('div');
+  warningMsg.id = 'vocab-sensitive-warning';
+  warningMsg.style.cssText = `
+    position: fixed;
+    background: #ff6b35;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 999999;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    user-select: none;
+    border: 2px solid #e55a2b;
+    max-width: 300px;
+    text-align: center;
+    bottom: 32px;
+    right: 32px;
+    opacity: 0.95;
+  `;
+  
+  warningMsg.innerHTML = `⚠️ Sensitive information detected. Cannot save "${text.substring(0, 20)}${text.length > 20 ? '...' : ''}"`;
+  
+  // Add click to dismiss
+  warningMsg.addEventListener('click', () => {
+    if (warningMsg.parentNode) {
+      warningMsg.parentNode.removeChild(warningMsg);
+    }
+  });
+  
+  document.body.appendChild(warningMsg);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    if (warningMsg.parentNode) {
+      warningMsg.parentNode.removeChild(warningMsg);
+    }
+  }, 3000);
+}
+
 function isValidWord(text) {
     if (!text || text.length === 0) return false;
     
-    if (text.includes(' ')) return false;
+    // Check for any whitespace (space, tab, newline, etc.)
+    if (/\s/.test(text)) return false;
     
-    if (text.includes('\n') || text.includes('\r') || text.includes('\t')) return false;
+    // Check for any digits
+    if (/\d/.test(text)) return false;
     
-    if (text.length > 30) return false;
+    // Check for any special characters (except hyphen and apostrophe for English words)
+    if (/[^a-zA-Z\-']/.test(text)) return false;
     
-    if (/^[\s\d\W]+$/.test(text)) return false;
+    // Length check
+    if (text.length < 2 || text.length > 20) return false;
     
-    if (/^[a-zA-Z\-']+$/.test(text)) {
-        return text.length >= 2 && text.length <= 20;
+    // Check for sensitive information patterns
+    const sensitivePatterns = [
+        /password/i,
+        /passwd/i,
+        /pwd/i,
+        /secret/i,
+        /private/i,
+        /confidential/i,
+        /token/i,
+        /key/i,
+        /api[_-]?key/i,
+        /auth[_-]?token/i,
+        /session[_-]?id/i,
+        /cookie/i,
+        /credit[_-]?card/i,
+        /card[_-]?number/i,
+        /ssn/i,
+        /social[_-]?security/i,
+        /phone[_-]?number/i,
+        /email[_-]?address/i,
+        /address/i,
+        /zip[_-]?code/i,
+        /postal[_-]?code/i,
+        /bank[_-]?account/i,
+        /account[_-]?number/i,
+        /routing[_-]?number/i,
+        /swift[_-]?code/i,
+        /iban/i,
+        /pin/i,
+        /cvv/i,
+        /cvc/i,
+        /expiry/i,
+        /expiration/i
+    ];
+    
+    // Check if text contains sensitive patterns
+    for (const pattern of sensitivePatterns) {
+        if (pattern.test(text)) {
+            console.log('Sensitive information detected, blocking save:', text);
+            return false;
+        }
     }
     
-    if (/^[가-힣a-zA-Z0-9\-']+$/.test(text)) {
-        return text.length >= 1 && text.length <= 15;
+    // Final check: must be pure English word (letters, hyphens, apostrophes only)
+    if (!/^[a-zA-Z\-']+$/.test(text)) {
+        return false;
     }
     
-    return false;
+    return true;
 }
 
 function highlightSelectedText() {
