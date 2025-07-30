@@ -1,16 +1,16 @@
 // Content Script for Vocabulary Bookmarker
-// Check if we're on the newtab page and exit early
+// Check if we're on chrome:// pages or newtab page and exit early
 const currentUrl = window.location.href;
-const isNewTabPage = currentUrl.includes('newtab.html') || 
+const isChromePage = currentUrl.startsWith('chrome://') || 
+                     currentUrl.startsWith('chrome-extension://') ||
+                     currentUrl.includes('newtab.html') || 
                      currentUrl.includes('chrome://newtab') ||
                      (currentUrl.includes('chrome-extension://') && currentUrl.includes('newtab'));
 
-if (isNewTabPage) {
-    console.log('Content script disabled on newtab page:', currentUrl);
-    // Don't initialize any functionality on newtab page
+if (isChromePage) {
+    // Don't initialize any functionality on chrome:// pages
     // Just exit gracefully
 } else {
-    console.log('Content script loaded on:', currentUrl);
     
     let selectedText = '';
     let indicator = null;
@@ -30,27 +30,21 @@ if (isNewTabPage) {
 // Listen for text selection with multiple events (non-PDF only)
 // mouseup event is only used for popup display
 document.addEventListener('mouseup', () => {
-  console.log('[Content Script] mouseup event fired');
   setTimeout(() => {
     const currentSelectedText = window.getSelection().toString().trim();
-    console.log('[Content Script] Selected text:', currentSelectedText);
     
     if (currentSelectedText.length > 0 && currentSelectedText !== selectedText) {
       // Check if this text is already highlighted
       const isAlreadyHighlighted = highlightedWords.includes(currentSelectedText);
       if (isAlreadyHighlighted) {
-        console.log('[Content Script] Text already highlighted, skipping');
         return;
       }
       
       selectedText = currentSelectedText;
-      console.log('[Content Script] New text selected:', selectedText);
       
       if (highlightMode) {
-        console.log('[Content Script] Highlight mode active, highlighting text');
         highlightSelectedText();
       } else {
-        console.log('[Content Script] Normal mode, showing save indicator');
         showSaveIndicator();
       }
     }
@@ -116,25 +110,13 @@ document.addEventListener('selectionchange', () => {
 
 // Detect PDF.js based PDF viewer environment
 function detectPDFViewer() {
-  // Log current URL
-      console.log('Current page URL:', window.location.href);
-    console.log('Current page domain:', window.location.hostname);
-  
   // PDF.js viewer usually has classes like .pdfViewer, .textLayer, .viewer
   if (document.querySelector('.pdfViewer, .textLayer, .viewer, canvas')) {
     isPDFViewer = true;
-          pdfMode = true; // Enable PDF mode
-      console.log('PDF.js based PDF viewer detected');
-          console.log('PDF.js viewer DOM structure:', {
-      pdfViewer: !!document.querySelector('.pdfViewer'),
-      textLayer: !!document.querySelector('.textLayer'),
-      viewer: !!document.querySelector('.viewer'),
-      canvas: !!document.querySelector('canvas')
-    });
+    pdfMode = true; // Enable PDF mode
   } else {
     isPDFViewer = false;
     pdfMode = false; // Disable PDF mode
-    console.log('PDF.js viewer not detected');
   }
 }
 
@@ -144,18 +126,10 @@ detectPDFViewer();
 if (isPDFViewer) {
   document.addEventListener('selectionchange', () => {
     const sel = window.getSelection().toString().trim();
-    console.log('[PDF] selectionchange fired, sel:', sel);
     if (sel && sel !== selectedText) {
       selectedText = sel;
       showSaveIndicator();
-      console.log('[PDF] showSaveIndicator called for:', sel);
     }
-  });
-  
-  // Additional: Log mouseup event in PDF.js environment
-  document.addEventListener('mouseup', () => {
-    const sel = window.getSelection().toString().trim();
-    console.log('[PDF] mouseup fired, sel:', sel);
   });
 }
 
@@ -174,12 +148,10 @@ function handleTextSelection() {
             // Check if this text is already highlighted
             const isAlreadyHighlighted = highlightedWords.includes(newSelectedText);
             if (isAlreadyHighlighted) {
-                console.log('Text already highlighted, skipping:', newSelectedText);
                 return;
             }
             
             selectedText = newSelectedText;
-            console.log('Text selected:', selectedText); // Debug log
             
             if (highlightMode) {
                 highlightSelectedText();
@@ -193,8 +165,6 @@ function handleTextSelection() {
 
 // Listen for keyboard shortcuts
 document.addEventListener('keydown', function(event) {
-  console.log('Keydown event:', event.key, 'Ctrl:', event.ctrlKey, 'Shift:', event.shiftKey);
-  
   // Handle Escape key
   if (event.key === 'Escape') {
     if (highlightMode) {
@@ -215,23 +185,19 @@ async function initializeHighlightMode() {
     
     // Check if chrome API is available
     if (!isChromeAPIAvailable()) {
-      console.log('Chrome API not available during initialization');
       highlightMode = false;
       return;
     }
     
     const result = await chrome.storage.local.get(['highlightMode']);
     highlightMode = result.highlightMode || false;
-    console.log('Highlight mode initialized:', highlightMode);
   } catch (error) {
-    console.error('Error loading highlight mode:', error);
     highlightMode = false;
     
     // If extension context is invalidated, stop trying to use Chrome API
     if (error.message.includes('Extension context invalidated') ||
         error.message.includes('Receiving end does not exist') ||
         error.message.includes('Could not establish connection')) {
-      console.log('Extension context invalidated, disabling Chrome API usage');
       chromeAPIAvailable = false;
     }
   }
@@ -240,49 +206,28 @@ async function initializeHighlightMode() {
 // Listen for messages from popup
 if (isChromeAPIAvailable()) {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        console.log('Message received:', message);
         if (message.action === 'updateHighlightMode') {
             highlightMode = message.highlightMode;
-            console.log('Highlight mode updated via message:', highlightMode);
             if (!highlightMode) {
                 clearAllHighlights();
             }
-        } else if (message.action === 'debugHighlightMode') {
-            console.log('=== Content Script Debug Info ===');
-            console.log('Current highlight mode:', highlightMode);
-            console.log('Highlighted words:', highlightedWords);
-            console.log('Highlight elements:', highlightElements);
-            console.log('Selected text:', selectedText);
-            
-            // Check storage
-            if (isChromeAPIAvailable()) {
-                chrome.storage.local.get(['highlightMode'], (result) => {
-                    console.log('Storage highlight mode:', result.highlightMode);
-                });
-            }
         }
     });
-} else {
-    console.log('Chrome API not available or PDF viewer, skipping message listener');
 }
 
 // Initialize on load with error handling
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing content script');
     setTimeout(() => {
         initializeHighlightMode();
         
         if (isChromeAPIAvailable()) {
             startHighlightModeCheck();
-        } else {
-            console.log('Chrome API not available or PDF viewer, skipping highlight mode check');
         }
     }, 100); // Small delay to ensure DOM is fully ready
 });
 
 // Also initialize when window loads (for PDFs and other dynamic content)
 window.addEventListener('load', () => {
-    console.log('Window loaded, checking initialization');
     setTimeout(() => {
         if (!highlightMode && isChromeAPIAvailable()) {
             initializeHighlightMode();
@@ -294,7 +239,6 @@ window.addEventListener('load', () => {
 // Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden && isChromeAPIAvailable()) {
-        console.log('Page became visible, reinitializing if needed');
         setTimeout(() => {
             if (!highlightMode) {
                 initializeHighlightMode();
@@ -323,28 +267,11 @@ function isChromeAPIAvailable() {
         // On PDF pages, be more lenient with API checks
         if (isPDFPage) {
             const basicCheck = hasChrome && hasChromeObject && flagSet;
-            console.log('PDF page Chrome API check:', {
-                isPDFPage,
-                basicCheck,
-                hasChrome,
-                hasChromeObject,
-                flagSet
-            });
             return basicCheck;
         }
         
-        console.log('Chrome API availability check:', {
-            hasChrome,
-            hasChromeObject,
-            hasStorage,
-            hasLocalStorage,
-            hasRuntime,
-            flagSet
-        });
-        
         return hasChrome && hasChromeObject && hasStorage && hasLocalStorage && hasRuntime && flagSet;
     } catch (error) {
-        console.error('Error in isChromeAPIAvailable:', error);
         return false;
     }
 }
@@ -359,7 +286,6 @@ function startHighlightModeCheck() {
             // Check if chrome API is available
             if (!isChromeAPIAvailable()) {
                 if (chromeAPIAvailable) {
-                    console.log('Chrome API became unavailable, stopping interval');
                     chromeAPIAvailable = false;
                 }
                 clearInterval(highlightCheckInterval);
@@ -373,14 +299,12 @@ function startHighlightModeCheck() {
             const newHighlightMode = result.highlightMode || false;
             if (newHighlightMode !== highlightMode) {
                 highlightMode = newHighlightMode;
-                console.log('Highlight mode changed to:', highlightMode);
                 if (!highlightMode) {
                     clearAllHighlights();
                 }
             }
         } catch (error) {
             consecutiveErrors++;
-            console.error(`Error checking highlight mode (attempt ${consecutiveErrors}):`, error);
             
             // Check for specific error types and stop immediately
             if (error.message.includes('Extension context invalidated') || 
@@ -390,7 +314,6 @@ function startHighlightModeCheck() {
                 error.message.includes('Could not establish connection') ||
                 error.message.includes('Extension context invalidated')) {
                 
-                console.log('Extension context invalid, disabling Chrome API and stopping interval');
                 chromeAPIAvailable = false;
                 clearInterval(highlightCheckInterval);
                 return;
@@ -398,7 +321,6 @@ function startHighlightModeCheck() {
             
             // Stop after too many consecutive errors
             if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                console.log(`Too many consecutive errors (${consecutiveErrors}), stopping interval`);
                 chromeAPIAvailable = false;
                 clearInterval(highlightCheckInterval);
                 return;
@@ -407,83 +329,10 @@ function startHighlightModeCheck() {
     }, 30000); // Increased interval to 30 seconds to reduce API calls
 }
 
-// Debug function to check highlight mode status
-window.checkHighlightMode = async () => {
-    try {
-        if (!isChromeAPIAvailable()) {
-            console.log('Chrome API not available for debug');
-            return null;
-        }
-        
-        const result = await chrome.storage.local.get(['highlightMode']);
-        console.log('Current highlight mode from storage:', result.highlightMode);
-        console.log('Current highlight mode in script:', highlightMode);
-        return result.highlightMode;
-    } catch (error) {
-        console.error('Error in debug function:', error);
-        
-        // If extension context is invalidated, disable Chrome API
-        if (error.message.includes('Extension context invalidated')) {
-            chromeAPIAvailable = false;
-        }
-        
-        return null;
-    }
-};
 
-// Debug function to test word saving
-window.testWordSave = async (word = 'test') => {
-    console.log('Testing word save with:', word);
-    try {
-        const result = await saveWordToVocabulary(word);
-        console.log('Test save result:', result);
-        return result;
-    } catch (error) {
-        console.error('Test save error:', error);
-        return false;
-    }
-};
-
-// Debug function to check vocabulary storage
-window.checkVocabulary = async () => {
-    try {
-        if (!isChromeAPIAvailable()) {
-            console.log('Chrome API not available for vocabulary check');
-            return null;
-        }
-        
-        const result = await chrome.storage.local.get(['vocabulary']);
-        console.log('Vocabulary from storage:', result.vocabulary);
-        console.log('Vocabulary count:', result.vocabulary ? result.vocabulary.length : 0);
-        return result.vocabulary;
-    } catch (error) {
-        console.error('Error checking vocabulary:', error);
-        return null;
-    }
-};
-
-// Debug function to check service worker status
-window.checkServiceWorker = async () => {
-    try {
-        if (!isChromeAPIAvailable()) {
-            console.log('Chrome API not available for service worker check');
-            return false;
-        }
-        
-        const response = await chrome.runtime.sendMessage({ action: 'ping' });
-        console.log('Service worker response:', response);
-        return response && response.status === 'alive';
-    } catch (error) {
-        console.error('Service worker check failed:', error);
-        return false;
-    }
-};
 
 // Function to check custom shortcut
 async function checkCustomShortcut(event) {
-  console.log('Checking custom shortcut for:', event.key, 'Ctrl:', event.ctrlKey, 'Shift:', event.shiftKey);
-  console.log('Selected text:', selectedText);
-  
   // Only process modifier key combinations
   // Ignore single key presses that might interfere with normal typing
   if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
@@ -493,15 +342,11 @@ async function checkCustomShortcut(event) {
   try {
     // Check if chrome API is available
     if (!isChromeAPIAvailable()) {
-      console.log('Chrome API not available, using default shortcut');
       // Fallback to default shortcut
       if (event.ctrlKey && event.shiftKey && event.key === 'S') {
-        console.log('Default shortcut detected, saving word');
         event.preventDefault();
         if (selectedText) {
           saveSelectedWord();
-        } else {
-          console.log('No text selected');
         }
       }
       return;
@@ -554,7 +399,7 @@ async function checkCustomShortcut(event) {
       }
     }
   } catch (error) {
-    console.error('Error checking custom shortcut:', error);
+    // Error checking custom shortcut
     
     // If extension context is invalidated, disable Chrome API
     if (error.message.includes('Extension context invalidated')) {
@@ -628,14 +473,11 @@ function hideSaveIndicator() {
   if (indicator) {
     indicator.style.display = 'none';
   }
-  console.log('hideSaveIndicator called - popup hidden');
 }
 
 // Show popup
 function showSaveIndicator() {
-  console.log('[Content Script] showSaveIndicator called with text:', selectedText);
   if (!selectedText || selectedText.length < 1) {
-    console.log('[Content Script] No valid text to show indicator for');
     return;
   }
   
@@ -691,7 +533,6 @@ function showSaveIndicator() {
   indicator.innerHTML = `💾 Click to save "${displayText}"`;
   indicator.style.display = 'block';
   indicator.style.opacity = '1';
-  console.log('[Content Script] Save indicator displayed for:', displayText);
 }
 
 // Function to save selected word
@@ -699,15 +540,12 @@ async function saveSelectedWord() {
   // Get the current selected text at the time of function call
   const textToSave = selectedText || window.getSelection().toString().trim();
   
-  console.log('saveSelectedWord called with:', textToSave);
   if (!textToSave) {
-    console.log('No selected text, returning');
     return;
   }
   
   // Validate that it's a valid English word
   if (!isValidWord(textToSave)) {
-    console.log('Word validation failed in saveSelectedWord:', textToSave);
     showSensitiveInfoWarning(textToSave);
     // Invalid words are not saved or transmitted to any server
     return;
@@ -719,7 +557,6 @@ async function saveSelectedWord() {
   try {
     // PDF-only mode (default to false if pdfMode is undefined)
     if (typeof pdfMode !== 'undefined' && pdfMode) {
-      console.log('PDF mode detected, using PDF storage');
       // Use general storage method if pdfStorage is undefined
       if (typeof pdfStorage !== 'undefined') {
         const success = await pdfStorage.saveWord(textToSave);
@@ -728,11 +565,8 @@ async function saveSelectedWord() {
           if (typeof showPDFStorageInfo === 'function') {
             showPDFStorageInfo();
           }
-        } else {
-          console.log('Word already exists in PDF storage');
         }
       } else {
-        console.log('PDF storage not available, using fallback method');
         await saveWordToVocabulary(textToSave);
       }
       return;
@@ -740,60 +574,45 @@ async function saveSelectedWord() {
     
     // For PDF viewers, use fallback method directly
     if (isPDFViewer) {
-      console.log('PDF viewer detected, using fallback save method');
       await saveWordToVocabulary(textToSave);
       return;
     }
     
     // Check if chrome API is available
     if (!isChromeAPIAvailable()) {
-      console.log('Chrome API not available, cannot save word');
       return;
     }
     
     // Try direct storage first (more reliable)
     try {
       const saveResult = await saveWordToVocabulary(textToSave);
-      console.log('Direct storage result:', saveResult);
       if (saveResult) {
-        console.log('Word saved successfully');
         return;
-      } else {
-        console.log('Direct storage failed, trying background script');
       }
     } catch (directError) {
-      console.log('Direct storage failed, trying background script:', directError);
+      // Continue to background script fallback
     }
     
     // Send message to background script as fallback
     try {
-      const response = await chrome.runtime.sendMessage({
+      await chrome.runtime.sendMessage({
         action: 'saveWord',
         word: textToSave,
         url: window.location.href
       });
-      
-      if (response && response.success) {
-        console.log('Background script saved word successfully');
-      } else {
-        console.log('Background script failed');
-      }
     } catch (messageError) {
-      console.log('Message to background script failed:', messageError);
+      // Background script failed, but we already tried direct storage
     }
     
   } catch (error) {
-    console.error('Error saving word:', error);
-    
     // If extension context is invalidated, try direct storage
     if (error.message.includes('Extension context invalidated') ||
         error.message.includes('Receiving end does not exist') ||
         error.message.includes('Could not establish connection')) {
-      console.log('Extension context invalidated, trying direct storage');
       try {
         await saveWordToVocabulary(textToSave);
       } catch (fallbackError) {
-        console.error('Fallback storage also failed:', fallbackError);
+        // Fallback storage also failed
       }
     }
   }
@@ -954,7 +773,7 @@ function highlightSelectedText() {
     
     // Validate that it's a valid English word
     if (!isValidWord(selectedText)) {
-        console.log('Word validation failed in highlight mode:', selectedText);
+        // Word validation failed in highlight mode
         return;
     }
     
@@ -963,7 +782,7 @@ function highlightSelectedText() {
     const hasElements = fragment.querySelector && fragment.querySelector('*');
     
     if (hasElements) {
-        console.log('Selection contains HTML elements, using fallback highlight');
+        // Selection contains HTML elements, using fallback highlight
         applyFallbackHighlight(range);
         return;
     }
@@ -1011,7 +830,7 @@ function highlightSelectedText() {
                     highlightElements.splice(elementIndex, 1);
                 }
                 
-                console.log('Individual highlight removed:', selectedText);
+                // Individual highlight removed
             }
         });
         
@@ -1039,10 +858,7 @@ function highlightSelectedText() {
         // Show save button with correct word count
         showHighlightSaveButton();
         
-        console.log('Text highlighted:', selectedText, 'Word count:', wordCount);
-        
     } catch (error) {
-        console.error('Error highlighting text:', error);
         // Fallback method for complex selections
         applyFallbackHighlight(range);
     }
@@ -1053,7 +869,7 @@ function applyFallbackHighlight(range) {
     
     // Validate that it's a valid English word
     if (!isValidWord(selectedText)) {
-        console.log('Word validation failed in fallback highlight:', selectedText);
+        // Word validation failed in fallback highlight
         return;
     }
     
@@ -1078,7 +894,6 @@ function applyFallbackHighlight(range) {
     // Add word to highlighted words list
     if (!highlightedWords.includes(selectedText)) {
         highlightedWords.push(selectedText);
-        console.log('Added valid word to highlights (fallback):', selectedText);
     }
     
     // Show save button for highlighted words
@@ -1195,7 +1010,6 @@ async function saveHighlightedWords() {
     try {
         // Check if chrome API is available
         if (!isChromeAPIAvailable()) {
-            console.log('Chrome API not available, cannot save highlighted words');
             showHighlightSaveSuccess(highlightedWords.length);
             clearAllHighlights();
             return;
@@ -1215,11 +1029,8 @@ async function saveHighlightedWords() {
         clearAllHighlights();
         
     } catch (error) {
-        console.error('Error saving highlighted words:', error);
-        
         // If extension context is invalidated, show success anyway
         if (error.message.includes('Extension context invalidated')) {
-            console.log('Extension context invalidated, showing success message');
             showHighlightSaveSuccess(highlightedWords.length);
             clearAllHighlights();
         } else {
@@ -1263,20 +1074,15 @@ function showHighlightSaveSuccess(wordCount) {
 }
 
 async function saveWordToVocabulary(word) {
-    console.log('saveWordToVocabulary called with word:', word);
-    
     // Validate input
     if (!word || typeof word !== 'string' || word.trim().length === 0) {
-        console.log('Invalid word provided:', word);
         return false;
     }
     
     const cleanWord = word.trim();
-    console.log('Cleaned word:', cleanWord);
     
     // Validate that it's a valid English word
     if (!isValidWord(cleanWord)) {
-        console.log('Word validation failed:', cleanWord);
         // Invalid words are not saved or transmitted to any server
         return false;
     }
@@ -1284,17 +1090,13 @@ async function saveWordToVocabulary(word) {
     try {
         // Check if chrome API is available
         if (!isChromeAPIAvailable()) {
-            console.log('Chrome API not available, cannot save word');
             return false;
         }
-        
-        console.log('Chrome API is available, proceeding with save');
         
         // Get word definition with stop words fallback
         let definition = 'Definition not available';
         
         try {
-            console.log('Fetching definition for word:', cleanWord);
             // First try the regular dictionary API
             const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
             const data = await response.json();
@@ -1303,10 +1105,8 @@ async function saveWordToVocabulary(word) {
                 const meaning = data[0].meanings[0];
                 const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
                 definition = partOfSpeech + meaning.definitions[0].definition;
-                console.log('Definition found:', definition);
             } else {
                 // If definition not found, try stop words API
-                console.log(`Definition not found for "${cleanWord}", trying stop words API`);
                 const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(cleanWord)}&md=d&max=1`);
                 const stopWordsData = await stopWordsResponse.json();
                 
@@ -1314,24 +1114,20 @@ async function saveWordToVocabulary(word) {
                     const stopWordEntry = stopWordsData[0];
                     if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
                         definition = stopWordEntry.defs[0];
-                        console.log('Definition found from stop words API:', definition);
                     }
                 }
             }
         } catch (apiError) {
-            console.error('Error fetching definition from APIs:', apiError);
+            // API error, continue with default definition
         }
         
-        console.log('Saving word to storage:', cleanWord);
         // Save to storage
         const result = await chrome.storage.local.get(['vocabulary']);
         const vocabulary = result.vocabulary || [];
-        console.log('Current vocabulary count:', vocabulary.length);
         
         // Check if word already exists
         const existingIndex = vocabulary.findIndex(w => w.word.toLowerCase() === cleanWord.toLowerCase());
         if (existingIndex === -1) {
-            console.log('Word does not exist, adding to vocabulary');
             vocabulary.push({
                 word: cleanWord,
                 definition: definition,
@@ -1341,16 +1137,12 @@ async function saveWordToVocabulary(word) {
             });
             
             await chrome.storage.local.set({ vocabulary: vocabulary });
-            console.log('Word saved successfully to storage');
             return true;
         } else {
-            console.log('Word already exists in vocabulary');
             return true; // Still return true as it's not an error
         }
         
     } catch (error) {
-        console.error('Error saving word:', error);
-        
         // If extension context is invalidated, disable Chrome API
         if (error.message.includes('Extension context invalidated')) {
             chromeAPIAvailable = false;
@@ -1377,76 +1169,19 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Additional event listeners for better text selection detection
-document.addEventListener('mouseover', function(event) {
-    // Check for text selection on mouse over
-    const selection = window.getSelection().toString().trim();
-    if (selection && selection !== selectedText) {
-        selectedText = selection;
-        if (highlightMode) {
-            highlightSelectedText();
-        } else {
-            showSaveIndicator();
-        }
-    }
-});
 
-// Listen for input events that might change selection
-document.addEventListener('input', handleTextSelection);
-document.addEventListener('paste', handleTextSelection);
-document.addEventListener('cut', handleTextSelection);
 
-// Force check for selection periodically
-setInterval(() => {
-    const currentSelection = window.getSelection().toString().trim();
-    if (currentSelection && currentSelection !== selectedText) {
-        selectedText = currentSelection;
-        if (highlightMode) {
-            highlightSelectedText();
-        } else {
-            showSaveIndicator();
-        }
-    }
-}, 500);
 
-// Keep service worker alive with simple ping
-let lastPingSuccess = true;
-setInterval(() => {
-    // Skip pinging on PDF pages to avoid errors
-    if (window.location.href.includes('pdf.js') || window.location.href.includes('viewer.html')) {
-        return;
-    }
-    
-    if (isChromeAPIAvailable() && lastPingSuccess) {
-        try {
-            chrome.runtime.sendMessage({ action: 'ping' })
-                .then(response => {
-                    // Success - service worker is alive
-                    lastPingSuccess = true;
-                })
-                .catch(error => {
-                    // Service worker is inactive - stop pinging for a while
-                    lastPingSuccess = false;
-                    console.log('Service worker inactive, pausing pings');
-                });
-        } catch (error) {
-            // Service worker is inactive - stop pinging for a while
-            lastPingSuccess = false;
-        }
-    }
-}, 60000); // Send ping every 60 seconds
 
-// Reset ping status when user interacts with the page
-document.addEventListener('click', () => {
-    lastPingSuccess = true; // Allow pinging again
-}, { passive: true }); 
+
+
+ 
 
 function addPDFTextLayerSelectionListener() {
   const textLayer = document.querySelector('.textLayer');
   if (textLayer) {
     textLayer.addEventListener('mouseup', () => {
       const sel = window.getSelection().toString().trim();
-      console.log('[PDF] textLayer mouseup, sel:', sel);
       if (sel && sel !== selectedText) {
         selectedText = sel;
         showSaveIndicator();

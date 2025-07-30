@@ -397,7 +397,10 @@ class VocabularyBoard {
 
         });
         
-        // Text selection for word saving - Improved version
+        // Text selection for word saving - Improved version with debouncing
+        let lastSelectedText = '';
+        let selectionTimeout = null;
+        
         document.addEventListener('mouseup', (e) => {
             // Don't trigger text selection on buttons and interactive elements
             if (e.target.closest('.btn, .delete-btn, .edit-definition-btn, .related-btn, .opposite-btn, .search-word-btn, .modal-close, .quiz-option, .word-action-btn, .sort-select, .search-input, .modal, .modal-content')) {
@@ -419,22 +422,36 @@ class VocabularyBoard {
                 return;
             }
             
-            setTimeout(() => {
+            // Clear previous timeout
+            if (selectionTimeout) {
+                clearTimeout(selectionTimeout);
+            }
+            
+            // Debounced text selection check
+            selectionTimeout = setTimeout(() => {
                 const selectedText = window.getSelection().toString().trim();
-                if (selectedText && selectedText.length > 0) {
-                    console.log('Text selected in newtab:', selectedText);
+                if (selectedText && selectedText.length > 0 && selectedText !== lastSelectedText) {
+                    lastSelectedText = selectedText;
                     this.showWordSaveIndicator(selectedText);
                 }
-            }, 10);
+            }, 200);
         });
 
-        // Additional text selection events
+        // Improved selection change event with debouncing
         document.addEventListener('selectionchange', () => {
-            const selectedText = window.getSelection().toString().trim();
-            if (selectedText && selectedText.length > 0) {
-                console.log('Selection changed in newtab:', selectedText);
-                this.showWordSaveIndicator(selectedText);
+            // Clear previous timeout
+            if (selectionTimeout) {
+                clearTimeout(selectionTimeout);
             }
+            
+            // Debounced selection change check
+            selectionTimeout = setTimeout(() => {
+                const selectedText = window.getSelection().toString().trim();
+                if (selectedText && selectedText.length > 0 && selectedText !== lastSelectedText) {
+                    lastSelectedText = selectedText;
+                    this.showWordSaveIndicator(selectedText);
+                }
+            }, 300);
         });
 
         document.addEventListener('mousedown', (e) => {
@@ -442,11 +459,13 @@ class VocabularyBoard {
             const indicator = document.getElementById('word-save-indicator');
             if (indicator && !indicator.contains(e.target)) {
                 this.hideWordSaveIndicator();
+                lastSelectedText = '';
             }
             
             // Clear any existing text selection when clicking on interactive elements
             if (e.target.closest('.btn, .delete-btn, .edit-definition-btn, .related-btn, .opposite-btn, .search-word-btn, .modal-close, .quiz-option, .word-action-btn, .sort-select, .search-input, .modal, .modal-content')) {
                 window.getSelection().removeAllRanges();
+                lastSelectedText = '';
             }
         });
         
@@ -456,20 +475,19 @@ class VocabularyBoard {
                 e.preventDefault();
                 const selectedText = window.getSelection().toString().trim();
                 if (selectedText && selectedText.length > 0) {
-                    console.log('Keyboard shortcut triggered for:', selectedText);
                     this.saveSelectedWord(selectedText);
                 }
             }
         });
         
-        // Periodic check for text selection (fallback)
-        setInterval(() => {
-            const selectedText = window.getSelection().toString().trim();
-            if (selectedText && selectedText.length > 0) {
-                console.log('Periodic check - text selected:', selectedText);
-                this.showWordSaveIndicator(selectedText);
-            }
-        }, 1000);
+        // Remove periodic check as it's causing too many logs
+        // setInterval(() => {
+        //     const selectedText = window.getSelection().toString().trim();
+        //     if (selectedText && selectedText.length > 0) {
+        //         console.log('Periodic check - text selected:', selectedText);
+        //         this.showWordSaveIndicator(selectedText);
+        //     }
+        // }, 1000);
         
         // Add direct event listeners after rendering
         this.addDirectEventListeners();
@@ -700,14 +718,17 @@ class VocabularyBoard {
         }
     }
     
-    loadVocabulary() {
-        chrome.storage.local.get(['vocabulary'], (result) => {
+    async loadVocabulary() {
+        try {
+            const result = await chrome.storage.local.get(['vocabulary']);
             this.vocabulary = result.vocabulary || [];
             
             this.renderWordsGrid();
             this.updateStats();
             this.updateProgress();
-        });
+        } catch (error) {
+            console.error('Error loading vocabulary:', error);
+        }
     }
     
     filterWords() {
@@ -951,9 +972,8 @@ class VocabularyBoard {
                     
                     await chrome.storage.local.set({ vocabulary: this.vocabulary });
                     
-                    this.updateStats();
-                    this.updateProgress();
-                    this.renderWordsGrid(); // Re-render to update reviewed status
+                    // Enhanced refresh after marking as reviewed
+                    await this.refreshVocabularyDisplay();
                 }
             }
         } catch (error) {
@@ -966,9 +986,8 @@ class VocabularyBoard {
             this.vocabulary = this.vocabulary.filter(w => w.word !== wordText);
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
             
-            this.updateStats();
-            this.updateProgress();
-            this.renderWordsGrid();
+            // Enhanced refresh after deletion
+            await this.refreshVocabularyDisplay();
         } catch (error) {
             console.error('Error deleting word:', error);
         }
@@ -993,7 +1012,11 @@ class VocabularyBoard {
         }
         
         if (addedCount > 0) {
-            this.loadVocabulary();
+            // Delayed refresh after all words are added
+            setTimeout(async () => {
+                await this.refreshVocabularyDisplay();
+            }, 1000);
+            this.showSuccess(`${addedCount} sample words added successfully!`);
         } else {
             alert('All sample words already exist!');
         }
@@ -1007,7 +1030,6 @@ class VocabularyBoard {
             
             // Get definition and example from API
             const wordData = await this.getWordDefinition(word);
-            console.log('Word data for', word, ':', wordData);
             
             // Add to vocabulary
             const newWord = {
@@ -1018,10 +1040,9 @@ class VocabularyBoard {
                 reviewCount: 0
             };
             
-            console.log('New word object:', newWord);
-            
             this.vocabulary.push(newWord);
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
+            
             return true;
             
         } catch (error) {
@@ -1269,7 +1290,9 @@ class VocabularyBoard {
         try {
             this.vocabulary = [];
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
-            this.loadVocabulary();
+            
+            // Enhanced refresh after clearing all words
+            await this.refreshVocabularyDisplay();
         } catch (error) {
             console.error('Error clearing all words:', error);
         }
@@ -1371,9 +1394,11 @@ class VocabularyBoard {
             }
 
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
-            this.renderWordsGrid();
-            this.updateStats();
-            this.updateProgress();
+            
+            // Delayed refresh after import
+            setTimeout(async () => {
+                await this.refreshVocabularyDisplay();
+            }, 1000);
 
             this.showSuccess(`Successfully imported ${importedWords.length} words!`);
             
@@ -1850,7 +1875,13 @@ class VocabularyBoard {
                     })
                 );
                 
-                return relatedWordsWithDefinitions;
+                // Filter out words that don't have valid definitions
+                const validRelatedWords = relatedWordsWithDefinitions.filter(item => 
+                    item.definition !== "Definition not found" && 
+                    item.definition !== "Definition not available"
+                );
+                
+                return validRelatedWords;
             }
             
             return [];
@@ -1884,7 +1915,13 @@ class VocabularyBoard {
                     })
                 );
                 
-                return oppositeWordsWithDefinitions;
+                // Filter out words that don't have valid definitions
+                const validOppositeWords = oppositeWordsWithDefinitions.filter(item => 
+                    item.definition !== "Definition not found" && 
+                    item.definition !== "Definition not available"
+                );
+                
+                return validOppositeWords;
             }
             
             return [];
@@ -2002,9 +2039,8 @@ class VocabularyBoard {
                 this.vocabulary[wordIndex].definition = newDefinition;
                 await chrome.storage.local.set({ vocabulary: this.vocabulary });
                 
-                this.updateStats();
-                this.updateProgress();
-                this.renderWordsGrid();
+                // Enhanced refresh after definition update
+                await this.refreshVocabularyDisplay();
                 
                 this.showSuccess(`Definition updated for "${wordText}"`);
             }
@@ -2050,8 +2086,8 @@ class VocabularyBoard {
                 toggleWordsIconBtn.title = this.allWordsHidden ? 'Show All Words' : 'Hide All Words';
             }
             
-            // Re-render to apply changes
-            this.renderWordsGrid();
+            // Enhanced refresh to apply changes
+            await this.refreshVocabularyDisplay();
             
             // Save state to storage
             await chrome.storage.local.set({ 
@@ -2394,7 +2430,6 @@ class VocabularyBoard {
         // Check if word already exists in vocabulary
         const existingWord = this.vocabulary.find(word => word.word.toLowerCase() === cleanText.toLowerCase());
         if (existingWord) {
-            console.log('Word already exists in vocabulary:', cleanText);
             return;
         }
 
@@ -2442,8 +2477,6 @@ class VocabularyBoard {
         indicator.innerHTML = `💾 Click to save "${displayText}"`;
         indicator.style.display = 'block';
         indicator.style.opacity = '1';
-        
-        console.log('Word save indicator shown for:', cleanText);
     }
 
     hideWordSaveIndicator() {
@@ -2460,8 +2493,6 @@ class VocabularyBoard {
 
     async saveSelectedWord(word) {
         try {
-            console.log('Saving word:', word);
-            
             // Clean the word
             const cleanWord = word.trim().replace(/\s+/g, ' ');
             if (cleanWord.length < 2) {
@@ -2484,16 +2515,47 @@ class VocabularyBoard {
                 return;
             }
             
-            await this.addWordWithDefinition(cleanWord);
-            this.hideWordSaveIndicator();
-            this.showSuccess(`"${cleanWord}" added to vocabulary!`);
+            // Add word and get definition
+            const wasAdded = await this.addWordWithDefinition(cleanWord);
             
-            // Refresh the display
-            this.loadVocabulary();
+            if (wasAdded) {
+                this.hideWordSaveIndicator();
+                this.showSuccess(`"${cleanWord}" added to vocabulary!`);
+                
+                // Delayed refresh to ensure API calls are complete
+                setTimeout(async () => {
+                    await this.loadVocabulary();
+                    this.updateStats();
+                    this.updateProgress();
+                    this.renderWordsGrid();
+                }, 1000);
+            } else {
+                this.showError('Failed to add word');
+            }
             
         } catch (error) {
             console.error('Error saving word:', error);
             this.showError('Failed to save word');
+        }
+    }
+
+    // Enhanced refresh method for vocabulary display
+    async refreshVocabularyDisplay() {
+        try {
+            // Reload vocabulary from storage
+            await this.loadVocabulary();
+            
+            // Update all related displays
+            this.updateStats();
+            this.updateProgress();
+            
+            // Force re-render with current settings
+            this.renderWordsGrid();
+            
+            // Update weekly score display
+            this.updateWeeklyScoreDisplay();
+        } catch (error) {
+            console.error('Error refreshing vocabulary display:', error);
         }
     }
 
@@ -2551,7 +2613,6 @@ class VocabularyBoard {
         // Check if text contains sensitive patterns
         for (const pattern of sensitivePatterns) {
             if (pattern.test(text)) {
-                console.log('Sensitive information detected, blocking save:', text);
                 return false;
             }
         }
@@ -3049,8 +3110,8 @@ class VocabularyBoard {
                 toggleDefinitionsIconBtn.title = this.allDefinitionsHidden ? 'Show All Definitions' : 'Hide All Definitions';
             }
             
-            // Re-render to apply changes
-            this.renderWordsGrid();
+            // Enhanced refresh to apply changes
+            await this.refreshVocabularyDisplay();
             
             // Save state to storage
             await chrome.storage.local.set({ 
@@ -3072,7 +3133,9 @@ class VocabularyBoard {
         if (wordIndex !== -1) {
             this.vocabulary[wordIndex].pinned = !this.vocabulary[wordIndex].pinned;
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
-            this.renderWordsGrid();
+            
+            // Enhanced refresh after pin toggle
+            await this.refreshVocabularyDisplay();
         }
     }
     
@@ -3081,7 +3144,9 @@ class VocabularyBoard {
             word.pinned = true;
         });
         await chrome.storage.local.set({ vocabulary: this.vocabulary });
-        this.renderWordsGrid();
+        
+        // Enhanced refresh after pin all
+        await this.refreshVocabularyDisplay();
         this.showSuccess('All words pinned! 📌');
     }
     
@@ -3090,7 +3155,9 @@ class VocabularyBoard {
             word.pinned = false;
         });
         await chrome.storage.local.set({ vocabulary: this.vocabulary });
-        this.renderWordsGrid();
+        
+        // Enhanced refresh after unpin all
+        await this.refreshVocabularyDisplay();
         this.showSuccess('All words unpinned! 📍');
     }
     
@@ -3113,9 +3180,8 @@ class VocabularyBoard {
                 this.vocabulary.splice(wordIndex, 1);
                 await chrome.storage.local.set({ vocabulary: this.vocabulary });
                 
-                this.renderWordsGrid();
-                this.updateStats();
-                this.updateProgress();
+                // Enhanced refresh after archiving
+                await this.refreshVocabularyDisplay();
                 
                 this.showSuccess(`"${wordText}" archived successfully`);
             }
@@ -3216,9 +3282,8 @@ class VocabularyBoard {
                 modal.remove();
             }
             
-            // Refresh the display
-            this.renderWordsGrid();
-            this.updateStats();
+            // Enhanced refresh after restoration
+            await this.refreshVocabularyDisplay();
             
         } catch (error) {
             console.error('Error restoring archived word:', error);
@@ -3254,9 +3319,8 @@ class VocabularyBoard {
                 modal.remove();
             }
             
-            // Refresh the display
-            this.renderWordsGrid();
-            this.updateStats();
+            // Enhanced refresh after deletion
+            await this.refreshVocabularyDisplay();
             
         } catch (error) {
             console.error('Error deleting archived word:', error);
@@ -3313,9 +3377,8 @@ class VocabularyBoard {
                 modal.remove();
             }
             
-            // Refresh the display
-            this.renderWordsGrid();
-            this.updateStats();
+            // Enhanced refresh after restoring all archived words
+            await this.refreshVocabularyDisplay();
             
         } catch (error) {
             console.error('Error restoring all archived words:', error);
@@ -3347,9 +3410,8 @@ class VocabularyBoard {
                 modal.remove();
             }
             
-            // Refresh the display
-            this.renderWordsGrid();
-            this.updateStats();
+            // Enhanced refresh after deleting all archived words
+            await this.refreshVocabularyDisplay();
             
         } catch (error) {
             console.error('Error deleting all archived words:', error);
@@ -3528,7 +3590,8 @@ class VocabularyBoard {
             this.vocabulary[wordIndex].example = newExample || null;
             await chrome.storage.local.set({ vocabulary: this.vocabulary });
             
-            this.renderWordsGrid();
+            // Enhanced refresh after example update
+            await this.refreshVocabularyDisplay();
             this.showSuccess(`Example ${newExample ? 'updated' : 'cleared'} successfully!`);
             
         } catch (error) {

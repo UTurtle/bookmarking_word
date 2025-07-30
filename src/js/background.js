@@ -2,7 +2,6 @@
 
 // Initialize features directly since permissions are now required
 function initializeFeatures() {
-  console.log('Initializing extension features...');
   
   // Initialize context menu for PDF files
   chrome.contextMenus.create({
@@ -12,9 +11,9 @@ function initializeFeatures() {
     targetUrlPatterns: ["*://*/*.pdf"]
   }, () => {
     if (chrome.runtime.lastError) {
-      console.log('Context menu creation error:', chrome.runtime.lastError);
+      // Context menu creation error
     } else {
-      console.log('Context menu created successfully');
+      // Context menu created successfully
     }
   });
   
@@ -29,7 +28,7 @@ function initializeFeatures() {
         }
       }
     } catch (error) {
-      console.error('Error in contextMenus.onClicked listener:', error);
+      // Error in contextMenus.onClicked listener
     }
   });
   
@@ -39,29 +38,23 @@ function initializeFeatures() {
   // Initialize PDF redirect
   initializePdfRedirect();
   
-  console.log('All features initialized successfully');
+  // All features initialized successfully
 }
 
 // Initialize new tab override functionality
 function initializeNewTabOverride() {
-  console.log('Initializing new tab override functionality');
   
   // Handle new tab override
   const handleTabCreated = async (tab) => {
     try {
-      console.log('Tab created:', {
-        id: tab.id,
-        pendingUrl: tab.pendingUrl,
-        url: tab.url,
-        status: tab.status
-      });
+      // Tab created
       
       // Only redirect if this is actually a new tab
       const isNewTab = (tab.pendingUrl === 'chrome://newtab/' || 
                        tab.pendingUrl === 'chrome://new-tab-page/' ||
                        tab.pendingUrl === 'about:newtab');
       
-      console.log('Is new tab:', isNewTab, 'pendingUrl:', tab.pendingUrl, 'url:', tab.url);
+      // Is new tab check
       
       // More strict redirect condition - only redirect actual new tabs
       const shouldRedirect = isNewTab && 
@@ -69,69 +62,60 @@ function initializeNewTabOverride() {
           tab.url !== 'about:blank' &&
           tab.status === 'loading';
       
-      console.log('Should redirect:', shouldRedirect, {
-          isNewTab,
-          hasNoUrl: !tab.url,
-          isNewTabUrl: tab.url === 'chrome://newtab/' || tab.url === 'about:newtab',
-          isNotAboutBlank: tab.pendingUrl !== 'about:blank' && tab.url !== 'about:blank',
-          isLoading: tab.status === 'loading'
-      });
+      // Should redirect check
       
       if (shouldRedirect) {
           // Simple redirect preparation
-          console.log('Preparing to redirect new tab to custom page');
           
           // Get the extension URL for the new tab page
           const newTabUrl = chrome.runtime.getURL('src/html/newtab.html');
-          console.log('Redirecting to:', newTabUrl);
           
           // Update the tab to our custom new tab page
           await chrome.tabs.update(tab.id, { url: newTabUrl });
-          console.log('New tab redirected successfully');
+          // New tab redirected successfully
       }
     } catch (error) {
-      console.error('Error handling tab creation:', error);
+      // Error handling tab creation
     }
   };
   
   // Add the listener
   chrome.tabs.onCreated.addListener(handleTabCreated);
-  console.log('New tab override listener added');
+  // New tab override listener added
 }
 
 // Initialize PDF redirect functionality
 function initializePdfRedirect() {
-  console.log('Initializing PDF redirect functionality');
   
   const handleBeforeNavigate = async (details) => {
     try {
       // Check if this is a PDF file
       const url = details.url;
-      if (url && url.toLowerCase().endsWith('.pdf')) {
-        console.log('PDF detected:', url);
-        
-        // Check if it's a remote PDF (not a local file)
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          console.log('Remote PDF detected, redirecting to viewer');
+              if (url && url.toLowerCase().endsWith('.pdf')) {
+          // PDF detected
           
-          // Redirect to Mozilla PDF viewer
-          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(url);
-          
-          // Update the current tab to the PDF viewer
-          await chrome.tabs.update(details.tabId, { url: pdfViewerUrl });
-          console.log('PDF redirected to viewer successfully');
-        } else {
-          console.log('Local PDF file, not redirecting');
+          // Check if it's a remote PDF (not a local file)
+          if (url.startsWith('http://') || url.startsWith('https://')) {
+            // Remote PDF detected, redirecting to viewer
+            
+            // Redirect to Mozilla PDF viewer
+            const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(url);
+            
+            // Update the current tab to the PDF viewer
+            await chrome.tabs.update(details.tabId, { url: pdfViewerUrl });
+            // PDF redirected to viewer successfully
+          } else {
+            // Local PDF file, not redirecting
+          }
         }
-      }
     } catch (error) {
-      console.error('Error handling PDF redirect:', error);
+      // Error handling PDF redirect
     }
   };
   
   // Add the listener
   chrome.webNavigation.onBeforeNavigate.addListener(handleBeforeNavigate);
-  console.log('PDF redirect listener added');
+  // PDF redirect listener added
 }
 
 // Function to validate if text is a valid English word
@@ -188,7 +172,7 @@ function isValidWord(text) {
     // Check if text contains sensitive patterns
     for (const pattern of sensitivePatterns) {
         if (pattern.test(text)) {
-            console.log('Sensitive information detected, blocking save:', text);
+            // Sensitive information detected, blocking save
             return false;
         }
     }
@@ -209,7 +193,7 @@ async function saveSelectedWord(selectedText, tabUrl = null) {
       
       // Validate that it's a valid English word
       if (!isValidWord(word)) {
-        console.log('Word validation failed in background script:', word);
+        // Word validation failed in background script
         // Invalid words are not saved or transmitted to any server
         return;
       }
@@ -229,7 +213,7 @@ async function saveSelectedWord(selectedText, tabUrl = null) {
       }, 2000);
     }
   } catch (error) {
-    console.error("Error saving word:", error);
+    // Error saving word
   }
 }
 
@@ -238,23 +222,21 @@ async function getWordDefinition(word) {
   try {
     // Additional validation for the word
     if (!word || word.length < 2 || word.length > 20) {
-      console.log('Invalid word length:', word);
       return "Invalid word";
     }
     
     // Check if word contains only valid characters
     if (!/^[a-zA-Z\-']+$/.test(word)) {
-      console.log('Invalid word characters:', word);
       return "Invalid word format";
     }
     
-    console.log('Fetching definition for word:', word);
+    // Fetching definition for word
     
     // First try the regular dictionary API
     const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
     
     if (!response.ok) {
-      console.log(`Dictionary API returned ${response.status} for word: ${word}`);
+      // Dictionary API returned error status
       // Try alternative API
       const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
       const stopWordsData = await stopWordsResponse.json();
@@ -287,7 +269,6 @@ async function getWordDefinition(word) {
     }
     
     // If definition not found, try stop words API
-    console.log(`Definition not found for "${word}", trying stop words API`);
     const stopWordsResponse = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`);
     const stopWordsData = await stopWordsResponse.json();
     
@@ -300,7 +281,7 @@ async function getWordDefinition(word) {
     
     return "Definition not found";
   } catch (error) {
-    console.error("Error fetching definition:", error);
+    // Error fetching definition
     return "Definition not available";
   }
 }
@@ -331,9 +312,9 @@ async function saveWordToStorage(word, definition, url) {
     }
     
     await chrome.storage.local.set({ vocabulary: vocabulary });
-    console.log(`Word "${word}" saved successfully`);
+    // Word saved successfully
   } catch (error) {
-    console.error("Error saving to storage:", error);
+    // Error saving to storage
   }
 }
 
@@ -347,15 +328,15 @@ try {
         
         // Check if the tab URL is accessible
         if (tab.url && tab.url.startsWith('chrome://')) {
-          console.log('Cannot access content from chrome:// pages:', tab.url);
+          // Cannot access content from chrome:// pages
           return;
         }
         
         // For chrome-extension:// pages (including newtab), use message passing
         if (tab.url && tab.url.startsWith('chrome-extension://')) {
-          console.log('Extension page detected:', tab.url);
+          // Extension page detected
           if (tab.url.includes('newtab.html')) {
-            console.log('New tab page detected - using message passing for keyboard shortcut');
+            // New tab page detected - using message passing for keyboard shortcut
             // Send message to newtab.js to get selected text
             try {
               const response = await chrome.tabs.sendMessage(tab.id, {
@@ -365,9 +346,9 @@ try {
               if (response && response.selectedText) {
                 await saveSelectedWord(response.selectedText, response.url);
               }
-            } catch (error) {
-              console.error('Error getting selected text from newtab page:', error);
-            }
+                          } catch (error) {
+                // Error getting selected text from newtab page
+              }
             return;
           }
         }
@@ -391,12 +372,12 @@ try {
           await saveSelectedWord(selectedText, tabUrl);
         }
       } catch (error) {
-        console.error("Error handling keyboard shortcut:", error);
+        // Error handling keyboard shortcut
       }
     }
   });
 } catch (error) {
-  console.log('Commands API not available, skipping keyboard shortcut setup');
+  // Commands API not available, skipping keyboard shortcut setup
 }
 
 // Note: Message listener is now handled in the combined listener above
@@ -404,31 +385,31 @@ try {
 // Enhanced service worker lifecycle management
 try {
   chrome.runtime.onStartup.addListener(async () => {
-    console.log('Extension startup - initializing features');
+    // Extension startup - initializing features
     initializeFeatures(); // Call the new initializeFeatures function
   });
 } catch (error) {
-  console.log('Runtime startup API not available');
+  // Runtime startup API not available
 }
 
 // Initialize optional features on installation
 try {
   chrome.runtime.onInstalled.addListener(async (details) => {
-    console.log('Extension installed/updated - initializing features', details);
+    // Extension installed/updated - initializing features
     initializeFeatures(); // Call the new initializeFeatures function
   });
 } catch (error) {
-  console.log('Runtime installed API not available');
+  // Runtime installed API not available
 }
 
 // Handle service worker lifecycle
 try {
   chrome.runtime.onSuspend.addListener(() => {
-    console.log('Service worker suspending - cleaning up');
+    // Service worker suspending - cleaning up
     // No specific cleanup needed here as features are initialized on startup/install
   });
 } catch (error) {
-  console.log('Runtime lifecycle APIs not available');
+  // Runtime lifecycle APIs not available
 }
 
 // Note: Chrome Extension Service Workers don't use self.addEventListener
@@ -437,7 +418,7 @@ try {
 // Enhanced service worker management and message handling
 try {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('Message received:', request);
+    // Message received
     
     // Always respond to keep service worker alive
     if (request.action === "ping" || request.action === "keepAlive") {
@@ -450,7 +431,7 @@ try {
       saveSelectedWord(request.word, request.url).then(() => {
         sendResponse({ success: true });
       }).catch((error) => {
-        console.error("Error in message handler:", error);
+        // Error in message handler
         sendResponse({ success: false, error: error.message });
       });
       return true; // Keep message channel open for async response
@@ -458,7 +439,6 @@ try {
     
     if (request.action === "wakeUp") {
       // Simple status check
-      console.log('Service worker status check');
       sendResponse({ status: "active", timestamp: Date.now() });
       return true;
     }
@@ -483,5 +463,5 @@ try {
     }
   });
 } catch (error) {
-  console.log('Runtime message API not available, skipping message listener setup');
+  // Runtime message API not available, skipping message listener setup
 }

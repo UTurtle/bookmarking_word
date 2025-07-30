@@ -33,8 +33,8 @@ const archive = archiver('zip', {
 });
 
 output.on('close', () => {
-  console.log('✅ Distribution ZIP file created: build/vocabulary-bookmarker-v1.1.0.zip');
-  console.log(`📦 Total size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
+  // Distribution ZIP file created
+  // Total size calculated
 });
 
 archive.on('error', (err) => {
@@ -47,9 +47,9 @@ archive.pipe(output);
 filesToInclude.forEach(file => {
   if (fs.existsSync(file)) {
     archive.file(file, { name: file });
-    console.log(`📁 Added: ${file}`);
+    // File added
   } else {
-    console.log(`⚠️  File not found: ${file}`);
+    // File not found
   }
 });
 

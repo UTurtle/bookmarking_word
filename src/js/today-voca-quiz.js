@@ -77,7 +77,7 @@ class TodayVocaQuiz {
             this.startTime = new Date();
             
         } catch (error) {
-            console.error('Error initializing quiz:', error);
+            // Error initializing quiz
             alert('Error initializing quiz. Please try again.');
             this.goToTodayVoca();
         }
@@ -97,7 +97,7 @@ class TodayVocaQuiz {
                 this.quizWords = todayVoca.words;
             }
         } catch (error) {
-            console.error('Error loading today voca words:', error);
+            // Error loading today voca words
         }
     }
     
@@ -191,7 +191,7 @@ class TodayVocaQuiz {
             
             return defaultDefinitions[word] || `Definition of ${word}`;
         } catch (error) {
-            console.error('Error getting word definition:', error);
+            // Error getting word definition
             return `Definition of ${word}`;
         }
     }
@@ -329,7 +329,7 @@ class TodayVocaQuiz {
                 await chrome.storage.local.set({ vocabulary: vocabulary });
             }
         } catch (error) {
-            console.error('Error updating word stats:', error);
+            // Error updating word stats
         }
     }
     
@@ -398,7 +398,7 @@ class TodayVocaQuiz {
                 await chrome.storage.local.set({ todayVocaHistory: history });
             }
         } catch (error) {
-            console.error('Error saving quiz result:', error);
+            // Error saving quiz result
         }
     }
     
