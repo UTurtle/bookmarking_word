@@ -9,6 +9,7 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 ### Core Features
 - **Word Save to Note**: Save words while browsing with `Ctrl+Shift+S`
 - **Automatic Definitions**: Fetch definitions from Dictionary API
+- **Audio Pronunciation**: 🔊 Play pronunciation for saved words
 - **Interactive Card**: Toggle hide/show card word and define
 - **Quiz Progress Tracking**: Daily streaks and statistics
 - **Pin/Unpin Words**: Mark important words for quick access
@@ -41,6 +42,7 @@ A Chrome extension for vocabulary learning with interactive quizzes, progress tr
 ### Basic Usage
 1. **Save Words**: Select any word and press `Ctrl+Shift+S`
 2. **View Vocabulary**: Open a new tab to see your vocabulary board
+3. **Play Pronunciation**: Click 🔊 button on any word card to hear pronunciation
 4. **Search**: Use the search bar to find specific words
 
 ### Quiz System
@@ -89,7 +91,7 @@ This extension includes PDF.js integration for enhanced PDF reading:
 ### Architecture
 - **Frontend**: Vanilla JavaScript (ES6+)
 - **Storage**: Chrome Storage API
-- **APIs**: Dictionary API, Datamuse API
+- **APIs**: Dictionary API, Datamuse API, Web Speech API
 - **PDF Viewer**: Mozilla PDF.js integration
 - **SRS System**: SuperMemo SM-2 algorithm implementation
 - **Build**: Node.js with archiver
@@ -155,7 +157,7 @@ For complete privacy information, see [Privacy Policy](privacy-policy.md).
 - **Adaptive Learning**: Adjust difficulty based on user performance
 
 ### Enhanced Learning Features
-- **Pronunciation Guide**: Audio pronunciation for saved words
+- **Pronunciation Guide**: ✅ Audio pronunciation for saved words (implemented)
 - **Context Examples**: Save words with their original context
 - **Pronunciation Practice**: Learn accurate pronunciation and intonation
 
@@ -165,8 +167,9 @@ Apache-2.0 License - see LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- Dictionary API for word definitions
+- Dictionary API for word definitions and phonetic data
 - Datamuse API for word relationships and synonyms
+- Web Speech API for text-to-speech functionality
 - Mozilla PDF.js for PDF viewing
 
 **Note**: This extension uses the Datamuse API for finding related words and synonyms. The Datamuse API is freely available and does not require an API key.

@@ -200,11 +200,11 @@ async function saveSelectedWord(selectedText, tabUrl = null) {
       
       const wordLower = word.toLowerCase();
       
-      // Get word definition
-      const definition = await getWordDefinition(wordLower);
+      // Get word definition and pronunciation
+      const wordData = await getWordDefinition(wordLower);
       
       // Save word to storage
-      await saveWordToStorage(wordLower, definition, tabUrl);
+      await saveWordToStorage(wordLower, wordData, tabUrl);
       
       // Show notification
       chrome.action.setBadgeText({ text: "✓" });
@@ -244,28 +244,56 @@ async function getWordDefinition(word) {
       if (stopWordsData && stopWordsData.length > 0) {
         const stopWordEntry = stopWordsData[0];
         if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
-          return stopWordEntry.defs[0];
+          return {
+            definition: stopWordEntry.defs[0],
+            pronunciation: null,
+            phonetic: null
+          };
         }
       }
-      return "Definition not found";
+      return {
+        definition: "Definition not found",
+        pronunciation: null,
+        phonetic: null
+      };
     }
     
     const data = await response.json();
     
     if (Array.isArray(data) && data.length > 0) {
       const entry = data[0];
+      let definition = "Definition not found";
+      let pronunciation = null;
+      let phonetic = null;
+      
       if (entry.meanings && entry.meanings.length > 0) {
         // Get the first definition
-        const definition = entry.meanings[0].definitions[0].definition;
+        definition = entry.meanings[0].definitions[0].definition;
         
         // Add part of speech if available
         const partOfSpeech = entry.meanings[0].partOfSpeech;
         if (partOfSpeech) {
-          return `(${partOfSpeech}) ${definition}`;
+          definition = `(${partOfSpeech}) ${definition}`;
         }
-        
-        return definition;
       }
+      
+      // Get pronunciation data
+      if (entry.phonetics && entry.phonetics.length > 0) {
+        // Find phonetic with audio URL
+        const phoneticWithAudio = entry.phonetics.find(p => p.audio);
+        if (phoneticWithAudio) {
+          pronunciation = phoneticWithAudio.audio;
+          phonetic = phoneticWithAudio.text;
+        } else if (entry.phonetics[0]) {
+          phonetic = entry.phonetics[0].text;
+        }
+      }
+      
+      return {
+        definition: definition,
+        pronunciation: pronunciation,
+        phonetic: phonetic
+      };
     }
     
     // If definition not found, try stop words API
@@ -275,46 +303,112 @@ async function getWordDefinition(word) {
     if (stopWordsData && stopWordsData.length > 0) {
       const stopWordEntry = stopWordsData[0];
       if (stopWordEntry.defs && stopWordEntry.defs.length > 0) {
-        return stopWordEntry.defs[0];
+        return {
+          definition: stopWordEntry.defs[0],
+          pronunciation: null,
+          phonetic: null
+        };
       }
     }
     
-    return "Definition not found";
+    return {
+      definition: "Definition not found",
+      pronunciation: null,
+      phonetic: null
+    };
   } catch (error) {
     // Error fetching definition
-    return "Definition not available";
+    return {
+      definition: "Definition not available",
+      pronunciation: null,
+      phonetic: null
+    };
   }
 }
 
 // Function to save word to storage
-async function saveWordToStorage(word, definition, url) {
+async function saveWordToStorage(word, wordData, url) {
   try {
     const result = await chrome.storage.local.get(['vocabulary']);
     const vocabulary = result.vocabulary || [];
     
     // Check if word already exists
-    const existingIndex = vocabulary.findIndex(item => item.word === word);
+    const existingIndex = vocabulary.findIndex(w => w.word.toLowerCase() === word.toLowerCase());
     
     if (existingIndex === -1) {
       // Add new word
       vocabulary.push({
         word: word,
-        definition: definition,
-        url: url,
+        definition: wordData.definition,
+        pronunciation: wordData.pronunciation,
+        phonetic: wordData.phonetic,
         dateAdded: new Date().toISOString(),
         reviewCount: 0,
-        todayVocaCount: 0
+        url: url
       });
     } else {
-      // Update existing word
-      vocabulary[existingIndex].reviewCount += 1;
-      vocabulary[existingIndex].lastReviewed = new Date().toISOString();
+      // Update existing word with new data
+      vocabulary[existingIndex] = {
+        ...vocabulary[existingIndex],
+        definition: wordData.definition,
+        pronunciation: wordData.pronunciation,
+        phonetic: wordData.phonetic
+      };
     }
     
     await chrome.storage.local.set({ vocabulary: vocabulary });
-    // Word saved successfully
+    return true;
   } catch (error) {
-    // Error saving to storage
+    // Error saving word to storage
+    return false;
+  }
+}
+
+// Function to play pronunciation
+function playPronunciation(audioUrl) {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio(audioUrl);
+    audio.onended = () => resolve();
+    audio.onerror = () => reject(new Error('Audio playback failed'));
+    audio.play().catch(reject);
+  });
+}
+
+// Function to speak text using Web Speech API
+function speakText(text, lang = 'en-US') {
+  return new Promise((resolve, reject) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      utterance.onend = () => resolve();
+      utterance.onerror = (event) => reject(new Error('Speech synthesis failed'));
+      speechSynthesis.speak(utterance);
+    } else {
+      reject(new Error('Speech synthesis not supported'));
+    }
+  });
+}
+
+// Function to get pronunciation for a word
+async function getWordPronunciation(word) {
+  try {
+    const wordData = await getWordDefinition(word);
+    
+    if (wordData.pronunciation) {
+      // Use audio URL from API
+      return await playPronunciation(wordData.pronunciation);
+    } else {
+      // Fallback to Web Speech API
+      return await speakText(word, 'en-US');
+    }
+  } catch (error) {
+    // Fallback to Web Speech API if audio URL fails
+    try {
+      return await speakText(word, 'en-US');
+    } catch (speechError) {
+      console.error('Pronunciation failed:', speechError);
+      throw speechError;
+    }
   }
 }
 

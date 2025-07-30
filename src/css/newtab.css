@@ -1683,7 +1683,8 @@ body.dark-mode .word-meta {
 }
 
 .related-btn,
-.opposite-btn {
+.opposite-btn,
+.pronunciation-btn {
     background: none;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -1706,8 +1707,15 @@ body.dark-mode .word-meta {
     color: #ff9800;
 }
 
+.pronunciation-btn:hover {
+    background: #e8f5e8;
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
 body.dark-mode .related-btn,
-body.dark-mode .opposite-btn {
+body.dark-mode .opposite-btn,
+body.dark-mode .pronunciation-btn {
     border-color: #4a5568;
     color: #a0aec0;
 }
@@ -1722,6 +1730,12 @@ body.dark-mode .opposite-btn:hover {
     background: #744210;
     border-color: #ed8936;
     color: #ed8936;
+}
+
+body.dark-mode .pronunciation-btn:hover {
+    background: #2d5016;
+    border-color: #48bb78;
+    color: #48bb78;
 }
 
 .review-count {

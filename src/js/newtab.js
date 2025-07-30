@@ -930,6 +930,7 @@ class VocabularyBoard {
                 <div class="definition ${this.allDefinitionsHidden ? 'hidden' : ''}">${word.definition}</div>
                 <!-- Example is hidden in board view for cleaner look -->
                 <div class="word-actions ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
+                    <button class="pronunciation-btn" title="Play pronunciation" data-word="${word.word}">🔊</button>
                     <button class="edit-definition-btn" title="Edit definition" data-word="${word.word}">📝</button>
                     <button class="search-word-btn" title="Search word online" data-word="${word.word}">🔍</button>
                     <button class="related-btn" title="Show related words" data-word="${word.word}">Related Words</button>
@@ -1036,6 +1037,8 @@ class VocabularyBoard {
                 word: word,
                 definition: wordData.definition,
                 example: wordData.example,
+                pronunciation: wordData.pronunciation,
+                phonetic: wordData.phonetic,
                 dateAdded: new Date().toISOString(),
                 reviewCount: 0
             };
@@ -1058,12 +1061,16 @@ class VocabularyBoard {
             
             if (Array.isArray(data) && data.length > 0) {
                 const entry = data[0];
+                let definition = "Definition not found";
+                let example = null;
+                let pronunciation = null;
+                let phonetic = null;
+                
                 if (entry.meanings && entry.meanings.length > 0) {
                     const meaning = entry.meanings[0];
-                    const definition = meaning.definitions[0].definition;
+                    definition = meaning.definitions[0].definition;
                     
                     // Try to get an example sentence
-                    let example = null;
                     if (meaning.definitions[0].example) {
                         example = meaning.definitions[0].example;
                     } else if (entry.meanings.some(m => m.definitions.some(d => d.example))) {
@@ -1078,22 +1085,40 @@ class VocabularyBoard {
                             if (example) break;
                         }
                     }
-                    
-                    return {
-                        definition: definition,
-                        example: example
-                    };
                 }
+                
+                // Get pronunciation data
+                if (entry.phonetics && entry.phonetics.length > 0) {
+                    // Find phonetic with audio URL
+                    const phoneticWithAudio = entry.phonetics.find(p => p.audio);
+                    if (phoneticWithAudio) {
+                        pronunciation = phoneticWithAudio.audio;
+                        phonetic = phoneticWithAudio.text;
+                    } else if (entry.phonetics[0]) {
+                        phonetic = entry.phonetics[0].text;
+                    }
+                }
+                
+                return {
+                    definition: definition,
+                    example: example,
+                    pronunciation: pronunciation,
+                    phonetic: phonetic
+                };
             }
             return {
                 definition: "Definition not found",
-                example: null
+                example: null,
+                pronunciation: null,
+                phonetic: null
             };
         } catch (error) {
             console.error('Error fetching definition:', error);
             return {
                 definition: "Definition not available",
-                example: null
+                example: null,
+                pronunciation: null,
+                phonetic: null
             };
         }
     }
@@ -2680,7 +2705,7 @@ class VocabularyBoard {
     
     addDirectEventListeners() {
         // Remove existing event listeners first
-        const existingButtons = this.wordsGrid.querySelectorAll('.delete-btn, .edit-definition-btn, .search-word-btn, .related-btn, .opposite-btn, .pin-btn');
+        const existingButtons = this.wordsGrid.querySelectorAll('.delete-btn, .edit-definition-btn, .search-word-btn, .related-btn, .opposite-btn, .pin-btn, .pronunciation-btn');
         existingButtons.forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
@@ -2693,6 +2718,7 @@ class VocabularyBoard {
         const oppositeButtons = this.wordsGrid.querySelectorAll('.opposite-btn');
         const pinButtons = this.wordsGrid.querySelectorAll('.pin-btn');
         const archiveButtons = this.wordsGrid.querySelectorAll('.archive-btn');
+        const pronunciationButtons = this.wordsGrid.querySelectorAll('.pronunciation-btn');
         const wordCards = this.wordsGrid.querySelectorAll('.word-card');
         
         // Delete buttons
@@ -2785,6 +2811,18 @@ class VocabularyBoard {
                 const word = wordCard.dataset.word;
                 console.log('Archive button clicked directly:', word);
                 this.archiveWord(word);
+            });
+        });
+        
+        // Pronunciation buttons
+        pronunciationButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const wordCard = button.closest('.word-card');
+                const word = wordCard.dataset.word;
+                console.log('Pronunciation button clicked directly:', word);
+                this.playWordPronunciation(word);
             });
         });
         
@@ -3625,9 +3663,69 @@ class VocabularyBoard {
         }
     }
 
+    // Function to play pronunciation
+    playPronunciation(audioUrl) {
+        return new Promise((resolve, reject) => {
+            const audio = new Audio(audioUrl);
+            audio.onended = () => resolve();
+            audio.onerror = () => reject(new Error('Audio playback failed'));
+            audio.play().catch(reject);
+        });
+    }
 
+    // Function to speak text using Web Speech API
+    speakText(text, lang = 'en-US') {
+        return new Promise((resolve, reject) => {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.onend = () => resolve();
+                utterance.onerror = (event) => reject(new Error('Speech synthesis failed'));
+                speechSynthesis.speak(utterance);
+            } else {
+                reject(new Error('Speech synthesis not supported'));
+            }
+        });
+    }
 
+    // Function to get pronunciation for a word
+    async getWordPronunciation(word) {
+        try {
+            // First try to get pronunciation from storage
+            const result = await chrome.storage.local.get(['vocabulary']);
+            const vocabulary = result.vocabulary || [];
+            const wordData = vocabulary.find(w => w.word.toLowerCase() === word.toLowerCase());
+            
+            if (wordData && wordData.pronunciation) {
+                // Use audio URL from storage
+                return await this.playPronunciation(wordData.pronunciation);
+            } else if (wordData && wordData.phonetic) {
+                // Use Web Speech API with phonetic text
+                return await this.speakText(word, 'en-US');
+            } else {
+                // Fallback to Web Speech API
+                return await this.speakText(word, 'en-US');
+            }
+        } catch (error) {
+            // Fallback to Web Speech API if audio URL fails
+            try {
+                return await this.speakText(word, 'en-US');
+            } catch (speechError) {
+                console.error('Pronunciation failed:', speechError);
+                throw speechError;
+            }
+        }
+    }
 
+    // Function to play pronunciation for a word (public method)
+    async playWordPronunciation(word) {
+        try {
+            await this.getWordPronunciation(word);
+        } catch (error) {
+            console.error('Failed to play pronunciation:', error);
+            this.showError('Failed to play pronunciation');
+        }
+    }
 
 }
 
