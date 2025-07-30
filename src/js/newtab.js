@@ -224,6 +224,15 @@ class VocabularyBoard {
             e.stopPropagation();
             this.toggleLayout();
         });
+        
+        // Keyboard shortcut handling for newtab page
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Shift+S for saving selected word
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                this.handleKeyboardShortcut();
+            }
+        });
         if (this.toggleCardButtonsBtn) this.toggleCardButtonsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleCardButtons();
@@ -481,7 +490,17 @@ class VocabularyBoard {
             }
         });
         
-
+        // 메시지 리스너 추가: background.js에서 getSelectedText 요청 처리
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+            if (request.action === 'getSelectedText') {
+                const selectedText = window.getSelection().toString().trim();
+                sendResponse({
+                    selectedText,
+                    url: window.location.href
+                });
+                return true; // 비동기 응답 허용
+            }
+        });
     }
     
     async loadSettings() {
@@ -3515,6 +3534,31 @@ class VocabularyBoard {
         } catch (error) {
             console.error('Error updating example:', error);
             this.showError('Failed to update example');
+        }
+    }
+    
+    // Handle keyboard shortcut for newtab page
+    async handleKeyboardShortcut() {
+        try {
+            const selectedText = window.getSelection().toString().trim();
+            
+            if (!selectedText) {
+                this.showError('No text selected');
+                return;
+            }
+            
+            // Validate the selected text
+            if (!this.isValidWord(selectedText)) {
+                this.showError('Invalid word selected');
+                return;
+            }
+            
+            // Save the selected word
+            await this.saveSelectedWord(selectedText);
+            
+        } catch (error) {
+            console.error('Error handling keyboard shortcut:', error);
+            this.showError('Failed to save word');
         }
     }
 

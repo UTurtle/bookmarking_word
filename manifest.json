@@ -9,17 +9,15 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
-  ],
-  "optional_permissions": [
+    "scripting",
     "tabs",
     "webNavigation",
     "contextMenus"
   ],
-  "host_permissions": [
-    "https://api.dictionaryapi.dev/*",
-    "https://api.datamuse.com/*"
-  ],
+      "host_permissions": [
+      "https://api.dictionaryapi.dev/*",
+      "https://api.datamuse.com/*"
+    ],
   "background": {
     "service_worker": "src/js/background.js"
   },
@@ -27,9 +25,9 @@
 
   "content_scripts": [
     {
-      "matches": [
-        "https://*/*"
-      ],
+        "matches": [
+          "https://*/*"
+        ],
       "exclude_matches": [
         "https://chrome.google.com/*"
       ],
@@ -54,6 +52,9 @@
       "matches": ["https://*/*"]
     }
   ],
+  "chrome_url_overrides": {
+    "newtab": "src/html/newtab.html"
+  },
   "action": {
     "default_popup": "src/html/popup.html",
     "default_title": "Vocabulary Learning Note",

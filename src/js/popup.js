@@ -190,103 +190,39 @@ class VocabularyPopup {
         }
     }
 
-    // Update permission request buttons based on current permissions
+    // Update permission request buttons - now all permissions are required
     async updatePermissionButtons() {
         try {
-            const permissions = await chrome.permissions.getAll();
-            
             // Update PDF permissions button
             const pdfPermissionsBtn = document.getElementById('request-pdf-permissions');
             if (pdfPermissionsBtn) {
-                const hasPdfPermissions = permissions.permissions.includes('webNavigation') && 
-                                        permissions.permissions.includes('contextMenus');
-                pdfPermissionsBtn.textContent = hasPdfPermissions ? 'Permission Granted' : 'Request Permission';
-                pdfPermissionsBtn.disabled = hasPdfPermissions;
-                pdfPermissionsBtn.style.background = hasPdfPermissions ? '#28a745' : '#667eea';
+                pdfPermissionsBtn.textContent = 'Permission Granted';
+                pdfPermissionsBtn.disabled = true;
+                pdfPermissionsBtn.style.background = '#28a745';
             }
             
             // Update tabs permissions button
             const tabsPermissionsBtn = document.getElementById('request-tabs-permissions');
             if (tabsPermissionsBtn) {
-                const hasTabsPermissions = permissions.permissions.includes('tabs');
-                tabsPermissionsBtn.textContent = hasTabsPermissions ? 'Permission Granted' : 'Request Permission';
-                tabsPermissionsBtn.disabled = hasTabsPermissions;
-                tabsPermissionsBtn.style.background = hasTabsPermissions ? '#28a745' : '#667eea';
+                tabsPermissionsBtn.textContent = 'Permission Granted';
+                tabsPermissionsBtn.disabled = true;
+                tabsPermissionsBtn.style.background = '#28a745';
             }
         } catch (error) {
             console.error('Error updating permission buttons:', error);
         }
     }
 
-    // Request PDF-related permissions
+    // Request PDF-related permissions - now all permissions are required
     async requestPdfPermissions() {
-        try {
-            const granted = await chrome.permissions.request({
-                permissions: ['webNavigation', 'contextMenus']
-            });
-            
-            if (granted) {
-                console.log('PDF permissions granted');
-                
-                // Check if permissions are actually available
-                const permissions = await chrome.permissions.getAll();
-                const hasWebNavigation = permissions.permissions.includes('webNavigation');
-                const hasContextMenus = permissions.permissions.includes('contextMenus');
-                
-                if (hasWebNavigation && hasContextMenus) {
-                    this.updatePermissionButtons();
-                    this.showMessage('PDF features permission granted!', 'success');
-                    
-                    // Reload extension to activate new permissions
-                    setTimeout(() => {
-                        chrome.runtime.reload();
-                    }, 1000);
-                } else {
-                    this.showMessage('Permission granted but not yet activated. Please reload the extension.', 'warning');
-                }
-            } else {
-                console.log('PDF permissions denied');
-                this.showMessage('PDF features permission denied.', 'error');
-            }
-        } catch (error) {
-            console.error('Error requesting PDF permissions:', error);
-            this.showMessage('Error occurred while requesting permission.', 'error');
-        }
+        this.showMessage('PDF features are now enabled by default!', 'success');
+        this.updatePermissionButtons();
     }
 
-    // Request tabs permission
+    // Request tabs permission - now all permissions are required
     async requestTabsPermission() {
-        try {
-            const granted = await chrome.permissions.request({
-                permissions: ['tabs']
-            });
-            
-            if (granted) {
-                console.log('Tabs permission granted');
-                
-                // Check if permission is actually available
-                const permissions = await chrome.permissions.getAll();
-                const hasTabs = permissions.permissions.includes('tabs');
-                
-                if (hasTabs) {
-                    this.updatePermissionButtons();
-                    this.showMessage('New tab override permission granted!', 'success');
-                    
-                    // Reload extension to activate new permissions
-                    setTimeout(() => {
-                        chrome.runtime.reload();
-                    }, 1000);
-                } else {
-                    this.showMessage('Permission granted but not yet activated. Please reload the extension.', 'warning');
-                }
-            } else {
-                console.log('Tabs permission denied');
-                this.showMessage('New tab override permission denied.', 'error');
-            }
-        } catch (error) {
-            console.error('Error requesting tabs permission:', error);
-            this.showMessage('Error occurred while requesting permission.', 'error');
-        }
+        this.showMessage('New tab override is now enabled by default!', 'success');
+        this.updatePermissionButtons();
     }
 
     // Show message to user
@@ -665,13 +601,14 @@ class VocabularyPopup {
 }
 
 // Initialize popup when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM loaded, initializing VocabularyPopup');
     try {
         const popup = new VocabularyPopup();
         console.log('VocabularyPopup initialized successfully');
         
-
+        // Update permission buttons after initialization
+        await popup.updatePermissionButtons();
         
     } catch (error) {
         console.error('Error initializing VocabularyPopup:', error);

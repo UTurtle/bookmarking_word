@@ -1,79 +1,52 @@
 // Background script for handling keyboard shortcuts and word saving
 
-// Check if optional permissions are available
-async function checkOptionalPermissions() {
-  try {
-    const permissions = await chrome.permissions.getAll();
-    return {
-      hasTabs: permissions.permissions.includes('tabs'),
-      hasWebNavigation: permissions.permissions.includes('webNavigation'),
-      hasContextMenus: permissions.permissions.includes('contextMenus')
-    };
-  } catch (error) {
-    console.error('Error checking permissions:', error);
-    return {
-      hasTabs: false,
-      hasWebNavigation: false,
-      hasContextMenus: false
-    };
-  }
-}
-
-// Initialize optional features if permissions are available
-async function initializeOptionalFeaturesIfAvailable() {
-  const permissions = await checkOptionalPermissions();
+// Initialize features directly since permissions are now required
+function initializeFeatures() {
+  console.log('Initializing extension features...');
   
-  if (permissions.hasTabs || permissions.hasWebNavigation || permissions.hasContextMenus) {
-    console.log('Optional permissions detected, initializing optional features...');
-    
-    // Initialize features directly instead of using import()
-    initializeOptionalFeatures(permissions);
-  }
-}
-
-// Initialize optional features directly
-function initializeOptionalFeatures(permissions) {
-  // Check if API is available before using it
-  function isAPIAvailable(apiName) {
-    try {
-      return chrome[apiName] !== undefined;
-    } catch (error) {
-      console.error(`Error checking ${apiName} availability:`, error);
-      return false;
-    }
-  }
-
-  // Initialize context menu for PDF files (only if permission is available)
-  if (permissions.hasContextMenus && isAPIAvailable('contextMenus')) {
-    try {
-      chrome.contextMenus.create({
-        id: "openPdfInViewer",
-        title: "Open in Mozilla PDF Viewer (Remote files only)",
-        contexts: ["link"],
-        targetUrlPatterns: ["*://*/*.pdf"]
-      });
+  // Initialize context menu for PDF files
+  chrome.contextMenus.create({
+    id: "openPdfInViewer",
+    title: "Open in Mozilla PDF Viewer (Remote files only)",
+    contexts: ["link"],
+    targetUrlPatterns: ["*://*/*.pdf"]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.log('Context menu creation error:', chrome.runtime.lastError);
+    } else {
       console.log('Context menu created successfully');
-    } catch (error) {
-      console.error('Error creating context menu:', error);
     }
-  }
+  });
   
-  // Initialize new tab override (only if permission is available)
-  if (permissions.hasTabs && isAPIAvailable('tabs')) {
-    initializeNewTabOverride();
-  }
+  // Add context menu click listener
+  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    try {
+      if (info.menuItemId === "openPdfInViewer") {
+        const pdfUrl = info.linkUrl;
+        if (pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf')) {
+          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(pdfUrl);
+          chrome.tabs.create({ url: pdfViewerUrl });
+        }
+      }
+    } catch (error) {
+      console.error('Error in contextMenus.onClicked listener:', error);
+    }
+  });
   
-  // Initialize PDF redirect (only if permission is available)
-  if (permissions.hasWebNavigation && isAPIAvailable('webNavigation')) {
-    initializePdfRedirect();
-  }
+  // Initialize new tab override
+  initializeNewTabOverride();
+  
+  // Initialize PDF redirect
+  initializePdfRedirect();
+  
+  console.log('All features initialized successfully');
 }
 
 // Initialize new tab override functionality
 function initializeNewTabOverride() {
   console.log('Initializing new tab override functionality');
   
-  // Handle new tab override dynamically
+  // Handle new tab override
   const handleTabCreated = async (tab) => {
     try {
       console.log('Tab created:', {
@@ -83,10 +56,7 @@ function initializeNewTabOverride() {
         status: tab.status
       });
       
-      // Keep service worker alive by simple logging
-      console.log('New tab created - service worker active');
-      
-      // Only redirect if this is actually a new tab (not a navigation to existing tab)
+      // Only redirect if this is actually a new tab
       const isNewTab = (tab.pendingUrl === 'chrome://newtab/' || 
                        tab.pendingUrl === 'chrome://new-tab-page/' ||
                        tab.pendingUrl === 'about:newtab');
@@ -109,160 +79,59 @@ function initializeNewTabOverride() {
       
       if (shouldRedirect) {
           // Simple redirect preparation
-          console.log('Redirecting new tab to custom page');
+          console.log('Preparing to redirect new tab to custom page');
           
-          // Add a small delay to ensure the tab is fully created
-          setTimeout(async () => {
-              try {
-                  const result = await chrome.storage.local.get(['newtabOverride', 'todayVocaPriority']);
-                  const newtabOverride = result.newtabOverride !== false; // Default to true
-                  const todayVocaPriority = result.todayVocaPriority || false; // Default to false
-                  
-                  console.log('Newtab override settings:', { newtabOverride, todayVocaPriority });
-                  
-                  if (newtabOverride) {
-                      let targetUrl;
-                      
-                      if (todayVocaPriority) {
-                          const today = new Date().toDateString();
-                          
-                          try {
-                              const todayVocaData = await chrome.storage.local.get(['todayVocaData']);
-                              const lastTodayVocaDate = todayVocaData.todayVocaData?.date;
-                              
-                              if (lastTodayVocaDate === today && todayVocaData.todayVocaData?.completed) {
-                                  targetUrl = chrome.runtime.getURL('src/html/newtab.html');
-                              } else {
-                                  targetUrl = chrome.runtime.getURL('src/html/today-voca.html');
-                              }
-                          } catch (error) {
-                              console.error('Error checking Today Voca status:', error);
-                              targetUrl = chrome.runtime.getURL('src/html/today-voca.html');
-                          }
-                      } else {
-                          targetUrl = chrome.runtime.getURL('src/html/newtab.html');
-                      }
-                      
-                      console.log('Redirecting to:', targetUrl);
-                      chrome.tabs.update(tab.id, { url: targetUrl });
-                  } else {
-                      console.log('Newtab override is disabled');
-                  }
-                  // If override is disabled, let it go to the default new tab page
-              } catch (error) {
-                  console.error('Error checking newtab override setting:', error);
-              }
-          }, 100);
+          // Get the extension URL for the new tab page
+          const newTabUrl = chrome.runtime.getURL('src/html/newtab.html');
+          console.log('Redirecting to:', newTabUrl);
+          
+          // Update the tab to our custom new tab page
+          await chrome.tabs.update(tab.id, { url: newTabUrl });
+          console.log('New tab redirected successfully');
       }
     } catch (error) {
-      console.error('Error in tabs.onCreated listener:', error);
+      console.error('Error handling tab creation:', error);
     }
   };
   
   // Add the listener
   chrome.tabs.onCreated.addListener(handleTabCreated);
-  
   console.log('New tab override listener added');
 }
 
 // Initialize PDF redirect functionality
 function initializePdfRedirect() {
-  // Auto-redirect PDF files to PDF.js viewer (optional feature)
-  chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  console.log('Initializing PDF redirect functionality');
+  
+  const handleBeforeNavigate = async (details) => {
     try {
-      const { pdfAutoRedirect = false } = await chrome.storage.local.get('pdfAutoRedirect');
-      if (!pdfAutoRedirect) {
-        return;
-      }
-    } catch (error) {
-      return;
-    }
-    
-    // Only process in main frame and check if it's a PDF file
-    const isPdfUrl = details.url.toLowerCase().endsWith('.pdf') || 
-                     details.url.includes('/pdf/') ||
-                     details.url.includes('application/pdf') ||
-                     details.url.includes('content-type=application/pdf');
-                     
-    if (details.frameId === 0 && isPdfUrl) {
-      console.log('PDF file detected:', details.url);
-      
-      // Don't redirect if already on viewer.html page (prevent infinite loop)
-      if (details.url.includes('viewer.html')) {
-        console.log('Already on viewer.html page, skipping redirect');
-        return;
-      }
-      
-      // Don't redirect extension internal URLs
-      if (details.url.startsWith(chrome.runtime.getURL(''))) {
-        console.log('Extension internal URL, skipping redirect');
-        return;
-      }
-      
-      // Don't redirect chrome:// or chrome-extension:// URLs
-      if (details.url.startsWith('chrome://') || details.url.startsWith('chrome-extension://')) {
-        console.log('Chrome internal URL, skipping redirect');
-        return;
-      }
-      
-      // Don't redirect data: URLs
-      if (details.url.startsWith('data:')) {
-        console.log('Data URL, skipping redirect');
-        return;
-      }
-      
-      // Don't redirect local files (use Chrome default behavior)
-      if (details.url.startsWith('file:///')) {
-        console.log('Local PDF file, not redirecting (using Chrome default behavior)');
-        return;
-      }
-      
-      if (details.url.includes('mozilla.github.io/pdf.js/web/viewer.html') && 
-          details.url.includes('file%3A%2F%2F%2F')) {
-        console.log('Mozilla viewer attempting to load local file - stopping redirect');
-        return;
-      }
-      
-      console.log('All conditions passed, attempting redirect');
-      
-      try {
-        const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(details.url);
-        console.log('PDF viewer URL (Mozilla):', pdfViewerUrl);
+      // Check if this is a PDF file
+      const url = details.url;
+      if (url && url.toLowerCase().endsWith('.pdf')) {
+        console.log('PDF detected:', url);
         
-        setTimeout(() => {
-          chrome.tabs.update(details.tabId, { url: pdfViewerUrl }, (tab) => {
-            if (chrome.runtime.lastError) {
-              console.error('PDF redirection error:', chrome.runtime.lastError);
-            } else {
-              console.log('PDF file opened successfully in Mozilla viewer');
-            }
-          });
-        }, 100);
-        
-      } catch (error) {
-        console.error('PDF redirection error:', error);
-      }
-    }
-  });
-}
-
-// Handle context menu clicks
-try {
-  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    try {
-      if (info.menuItemId === "openPdfInViewer") {
-        const pdfUrl = info.linkUrl;
-        if (pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf')) {
-          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(pdfUrl);
-          chrome.tabs.create({ url: pdfViewerUrl });
+        // Check if it's a remote PDF (not a local file)
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          console.log('Remote PDF detected, redirecting to viewer');
+          
+          // Redirect to Mozilla PDF viewer
+          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(url);
+          
+          // Update the current tab to the PDF viewer
+          await chrome.tabs.update(details.tabId, { url: pdfViewerUrl });
+          console.log('PDF redirected to viewer successfully');
+        } else {
+          console.log('Local PDF file, not redirecting');
         }
       }
     } catch (error) {
-      console.error('Error in contextMenus.onClicked listener:', error);
+      console.error('Error handling PDF redirect:', error);
     }
-  });
-} catch (error) {
-  console.log('Context menus API not available, skipping listener setup');
+  };
+  
+  // Add the listener
+  chrome.webNavigation.onBeforeNavigate.addListener(handleBeforeNavigate);
+  console.log('PDF redirect listener added');
 }
 
 // Function to validate if text is a valid English word
@@ -482,12 +351,28 @@ try {
           return;
         }
         
-        // For chrome-extension:// pages, try to access but handle gracefully
+        // For chrome-extension:// pages (including newtab), use message passing
         if (tab.url && tab.url.startsWith('chrome-extension://')) {
-          console.log('Attempting to access extension page:', tab.url);
+          console.log('Extension page detected:', tab.url);
+          if (tab.url.includes('newtab.html')) {
+            console.log('New tab page detected - using message passing for keyboard shortcut');
+            // Send message to newtab.js to get selected text
+            try {
+              const response = await chrome.tabs.sendMessage(tab.id, {
+                action: 'getSelectedText'
+              });
+              
+              if (response && response.selectedText) {
+                await saveSelectedWord(response.selectedText, response.url);
+              }
+            } catch (error) {
+              console.error('Error getting selected text from newtab page:', error);
+            }
+            return;
+          }
         }
         
-        // Execute script to get selected text from content script
+        // Execute script to get selected text from content script for regular web pages
         const results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           function: () => {
@@ -516,11 +401,11 @@ try {
 
 // Note: Message listener is now handled in the combined listener above
 
-// Initialize optional features on startup
+// Enhanced service worker lifecycle management
 try {
-  chrome.runtime.onStartup.addListener(() => {
+  chrome.runtime.onStartup.addListener(async () => {
     console.log('Extension startup - initializing features');
-    initializeOptionalFeaturesIfAvailable();
+    initializeFeatures(); // Call the new initializeFeatures function
   });
 } catch (error) {
   console.log('Runtime startup API not available');
@@ -528,18 +413,28 @@ try {
 
 // Initialize optional features on installation
 try {
-  chrome.runtime.onInstalled.addListener((details) => {
+  chrome.runtime.onInstalled.addListener(async (details) => {
     console.log('Extension installed/updated - initializing features', details);
-    initializeOptionalFeaturesIfAvailable();
+    initializeFeatures(); // Call the new initializeFeatures function
   });
 } catch (error) {
   console.log('Runtime installed API not available');
 }
 
+// Handle service worker lifecycle
+try {
+  chrome.runtime.onSuspend.addListener(() => {
+    console.log('Service worker suspending - cleaning up');
+    // No specific cleanup needed here as features are initialized on startup/install
+  });
+} catch (error) {
+  console.log('Runtime lifecycle APIs not available');
+}
+
 // Note: Chrome Extension Service Workers don't use self.addEventListener
 // They use chrome.runtime.onInstalled and chrome.runtime.onStartup instead
 
-// Keep service worker alive and handle messages
+// Enhanced service worker management and message handling
 try {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('Message received:', request);
@@ -565,6 +460,25 @@ try {
       // Simple status check
       console.log('Service worker status check');
       sendResponse({ status: "active", timestamp: Date.now() });
+      return true;
+    }
+    
+    // New permission management messages
+    if (request.action === "checkPermissions") {
+      // This function is no longer needed as permissions are required
+      sendResponse({ success: true, permissions: { hasTabs: true, hasWebNavigation: true, hasContextMenus: true } });
+      return true;
+    }
+    
+    if (request.action === "requestPermissions") {
+      // This function is no longer needed as permissions are required
+      sendResponse({ success: true, granted: true });
+      return true;
+    }
+    
+    if (request.action === "initializeFeatures") {
+      initializeFeatures(); // Call the new initializeFeatures function
+      sendResponse({ success: true });
       return true;
     }
   });
