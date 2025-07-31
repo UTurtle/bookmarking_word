@@ -419,12 +419,12 @@ class TodayVocaQuiz {
     
     goToTodayVoca() {
         const todayVocaUrl = chrome.runtime.getURL('src/html/today-voca.html');
-        chrome.tabs.update({ url: todayVocaUrl });
+        window.open(todayVocaUrl, '_blank', 'width=1000,height=800');
     }
     
     goToBoard() {
         const boardUrl = chrome.runtime.getURL('src/html/newtab.html');
-        chrome.tabs.update({ url: boardUrl });
+        window.open(boardUrl, '_blank', 'width=1200,height=800');
     }
     
     handleKeyboard(event) {

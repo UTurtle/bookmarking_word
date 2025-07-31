@@ -26,11 +26,9 @@ class VocabularyPopup {
         // Settings elements
         this.toggle = document.getElementById('toggle');
         this.animationToggle = document.getElementById('animation-toggle');
-        this.pdfRedirectToggle = document.getElementById('pdf-redirect-toggle');
         this.darkModeToggle = document.getElementById('dark-mode-toggle');
 
         this.streakBonusToggle = document.getElementById('streak-bonus-toggle');
-        this.newtabOverrideToggle = document.getElementById('newtab-override-toggle');
         this.todayVocaToggle = document.getElementById('today-voca-toggle');
         this.openMainBtn = document.getElementById('open-main-btn');
         this.customShortcutInput = document.getElementById('custom-shortcut');
@@ -42,8 +40,7 @@ class VocabularyPopup {
         this.saveWordsCountBtn = document.getElementById('save-words-count-btn');
 
         // Permission request buttons
-        this.requestPdfPermissionsBtn = document.getElementById('request-pdf-permissions');
-        this.requestTabsPermissionsBtn = document.getElementById('request-tabs-permissions');
+
     }
     
     bindEvents() {
@@ -63,11 +60,9 @@ class VocabularyPopup {
         // Settings
         this.toggle.addEventListener('click', () => this.toggleHighlightMode());
         this.animationToggle.addEventListener('click', () => this.toggleAnimation());
-        this.pdfRedirectToggle.addEventListener('click', () => this.togglePdfRedirect());
         this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
 
         this.streakBonusToggle.addEventListener('click', () => this.toggleStreakBonus());
-        this.newtabOverrideToggle.addEventListener('click', () => this.toggleNewtabOverride());
         this.todayVocaToggle.addEventListener('click', () => this.toggleTodayVoca());
         this.openMainBtn.addEventListener('click', () => this.openMainBoard());
         this.saveShortcutBtn.addEventListener('click', () => this.saveCustomShortcut());
@@ -82,12 +77,7 @@ class VocabularyPopup {
         });
 
         // Permission request buttons
-        if (this.requestPdfPermissionsBtn) {
-            this.requestPdfPermissionsBtn.addEventListener('click', () => this.requestPdfPermissions());
-        }
-        if (this.requestTabsPermissionsBtn) {
-            this.requestTabsPermissionsBtn.addEventListener('click', () => this.requestTabsPermission());
-        }
+
     }
     
     async loadVocabulary() {
@@ -108,11 +98,9 @@ class VocabularyPopup {
             const result = await chrome.storage.local.get([
                 'highlightMode', 
                 'animationsEnabled', 
-                'pdfAutoRedirect', 
                 'darkMode',
 
                 'streakBonusEnabled',
-                'newtabOverride',
                 'todayVocaPriority',
                 'customShortcut',
                 'todayVocaSettings'
@@ -134,13 +122,7 @@ class VocabularyPopup {
                 this.animationToggle.classList.remove('active');
             }
             
-            // Load PDF redirect setting (default to false for compliance)
-            const pdfAutoRedirect = result.pdfAutoRedirect || false;
-            if (pdfAutoRedirect) {
-                this.pdfRedirectToggle.classList.add('active');
-            } else {
-                this.pdfRedirectToggle.classList.remove('active');
-            }
+
             
             // Load dark mode setting
             const darkMode = result.darkMode || false;
@@ -160,13 +142,7 @@ class VocabularyPopup {
                 this.streakBonusToggle.classList.remove('active');
             }
             
-            // Load newtab override setting (default to true)
-            const newtabOverride = result.newtabOverride !== false; // Default to true
-            if (newtabOverride) {
-                this.newtabOverrideToggle.classList.add('active');
-            } else {
-                this.newtabOverrideToggle.classList.remove('active');
-            }
+
             
             // Load Today Voca priority setting (default to false)
             const todayVocaPriority = result.todayVocaPriority || false; // Default to false
@@ -190,40 +166,9 @@ class VocabularyPopup {
         }
     }
 
-    // Update permission request buttons - now all permissions are required
-    async updatePermissionButtons() {
-        try {
-            // Update PDF permissions button
-            const pdfPermissionsBtn = document.getElementById('request-pdf-permissions');
-            if (pdfPermissionsBtn) {
-                pdfPermissionsBtn.textContent = 'Permission Granted';
-                pdfPermissionsBtn.disabled = true;
-                pdfPermissionsBtn.style.background = '#28a745';
-            }
-            
-            // Update tabs permissions button
-            const tabsPermissionsBtn = document.getElementById('request-tabs-permissions');
-            if (tabsPermissionsBtn) {
-                tabsPermissionsBtn.textContent = 'Permission Granted';
-                tabsPermissionsBtn.disabled = true;
-                tabsPermissionsBtn.style.background = '#28a745';
-            }
-        } catch (error) {
-            console.error('Error updating permission buttons:', error);
-        }
-    }
 
-    // Request PDF-related permissions - now all permissions are required
-    async requestPdfPermissions() {
-        this.showMessage('PDF features are now enabled by default!', 'success');
-        this.updatePermissionButtons();
-    }
 
-    // Request tabs permission - now all permissions are required
-    async requestTabsPermission() {
-        this.showMessage('New tab override is now enabled by default!', 'success');
-        this.updatePermissionButtons();
-    }
+
 
     // Show message to user
     showMessage(message, type = 'info') {
@@ -380,13 +325,24 @@ class VocabularyPopup {
             this.toggle.classList.toggle('active');
             await chrome.storage.local.set({ highlightMode: newState });
             
-            // Send message to content script
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: 'updateHighlightMode',
-                    highlightMode: newState
-                });
+            // Send message to content script using scripting API instead of tabs
+            try {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (tab) {
+                    await chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        func: (highlightMode) => {
+                            // This function will be injected into the content script
+                            if (window.vocabularyContentScript) {
+                                window.vocabularyContentScript.updateHighlightMode(highlightMode);
+                            }
+                        },
+                        args: [newState]
+                    });
+                }
+            } catch (scriptError) {
+                // Content script communication failed, but highlight mode is still saved
+                console.log('Could not update content script, but setting was saved');
             }
         } catch (error) {
             console.error('Error toggling highlight mode:', error);
@@ -407,18 +363,7 @@ class VocabularyPopup {
         }
     }
     
-    async togglePdfRedirect() {
-        try {
-            const isActive = this.pdfRedirectToggle.classList.contains('active');
-            const newState = !isActive;
-            
-            this.pdfRedirectToggle.classList.toggle('active');
-            await chrome.storage.local.set({ pdfAutoRedirect: newState });
-        } catch (error) {
-            console.error('Error toggling PDF redirect:', error);
-            this.showError('Failed to update PDF redirect setting');
-        }
-    }
+
     
     async toggleDarkMode() {
         try {
@@ -448,28 +393,7 @@ class VocabularyPopup {
         }
     }
     
-    async toggleNewtabOverride() {
-        try {
-            const isActive = this.newtabOverrideToggle.classList.contains('active');
-            const newState = !isActive;
-            
-            // Update UI immediately
-            this.newtabOverrideToggle.classList.toggle('active');
-            
-            // Save to storage
-            await chrome.storage.local.set({ newtabOverride: newState });
-            
-            // Show success message
-            if (newState) {
-                this.showSuccess('New tab override enabled - new tabs will show vocabulary board');
-            } else {
-                this.showSuccess('New tab override disabled - new tabs will show default page');
-            }
-        } catch (error) {
-            console.error('Error toggling newtab override:', error);
-            this.showError('Failed to update newtab override setting');
-        }
-    }
+
     
     async toggleTodayVoca() {
         try {
@@ -498,15 +422,8 @@ class VocabularyPopup {
         try {
             const newtabUrl = chrome.runtime.getURL('src/html/newtab.html');
             
-            // Try to update current tab first (uses activeTab permission)
-            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (currentTab) {
-                await chrome.tabs.update(currentTab.id, { url: newtabUrl });
-                console.log('Current tab updated to main board');
-            } else {
-                // Fallback to creating new tab if current tab not found
-                await chrome.tabs.create({ url: newtabUrl });
-            }
+            // Open vocabulary board in a new window instead of overriding current tab
+            window.open(newtabUrl, '_blank', 'width=1200,height=800');
         } catch (error) {
             console.error('Error opening main board:', error);
             this.showError('Failed to open vocabulary board');
@@ -607,8 +524,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const popup = new VocabularyPopup();
         console.log('VocabularyPopup initialized successfully');
         
-        // Update permission buttons after initialization
-        await popup.updatePermissionButtons();
+
         
     } catch (error) {
         console.error('Error initializing VocabularyPopup:', error);

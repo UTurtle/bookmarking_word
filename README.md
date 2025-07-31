@@ -157,9 +157,10 @@ For complete privacy information, see [Privacy Policy](privacy-policy.md).
 - **Adaptive Learning**: Adjust difficulty based on user performance
 
 ### Enhanced Learning Features
-- **Pronunciation Guide**: ✅ Audio pronunciation for saved words (implemented)
 - **Context Examples**: Save words with their original context
 - **Pronunciation Practice**: Learn accurate pronunciation and intonation
+
+### Zotero Addon for Paper
 
 ## 📝 License
 

@@ -3,12 +3,11 @@
 // Initialize features directly since permissions are now required
 function initializeFeatures() {
   
-  // Initialize context menu for PDF files
+  // Initialize context menu for word saving
   chrome.contextMenus.create({
-    id: "openPdfInViewer",
-    title: "Open in Mozilla PDF Viewer (Remote files only)",
-    contexts: ["link"],
-    targetUrlPatterns: ["*://*/*.pdf"]
+    id: "saveWord",
+    title: "Save word to vocabulary",
+    contexts: ["selection"]
   }, () => {
     if (chrome.runtime.lastError) {
       // Context menu creation error
@@ -20,103 +19,18 @@ function initializeFeatures() {
   // Add context menu click listener
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     try {
-      if (info.menuItemId === "openPdfInViewer") {
-        const pdfUrl = info.linkUrl;
-        if (pdfUrl && pdfUrl.toLowerCase().endsWith('.pdf')) {
-          const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(pdfUrl);
-          chrome.tabs.create({ url: pdfViewerUrl });
-        }
+      if (info.menuItemId === "saveWord" && info.selectionText) {
+        await saveSelectedWord(info.selectionText, tab?.url);
       }
     } catch (error) {
       // Error in contextMenus.onClicked listener
     }
   });
   
-  // Initialize new tab override
-  initializeNewTabOverride();
-  
-  // Initialize PDF redirect
-  initializePdfRedirect();
-  
   // All features initialized successfully
 }
 
-// Initialize new tab override functionality
-function initializeNewTabOverride() {
-  
-  // Handle new tab override
-  const handleTabCreated = async (tab) => {
-    try {
-      // Tab created
-      
-      // Only redirect if this is actually a new tab
-      const isNewTab = (tab.pendingUrl === 'chrome://newtab/' || 
-                       tab.pendingUrl === 'chrome://new-tab-page/' ||
-                       tab.pendingUrl === 'about:newtab');
-      
-      // Is new tab check
-      
-      // More strict redirect condition - only redirect actual new tabs
-      const shouldRedirect = isNewTab && 
-          tab.pendingUrl !== 'about:blank' && 
-          tab.url !== 'about:blank' &&
-          tab.status === 'loading';
-      
-      // Should redirect check
-      
-      if (shouldRedirect) {
-          // Simple redirect preparation
-          
-          // Get the extension URL for the new tab page
-          const newTabUrl = chrome.runtime.getURL('src/html/newtab.html');
-          
-          // Update the tab to our custom new tab page
-          await chrome.tabs.update(tab.id, { url: newTabUrl });
-          // New tab redirected successfully
-      }
-    } catch (error) {
-      // Error handling tab creation
-    }
-  };
-  
-  // Add the listener
-  chrome.tabs.onCreated.addListener(handleTabCreated);
-  // New tab override listener added
-}
 
-// Initialize PDF redirect functionality
-function initializePdfRedirect() {
-  
-  const handleBeforeNavigate = async (details) => {
-    try {
-      // Check if this is a PDF file
-      const url = details.url;
-              if (url && url.toLowerCase().endsWith('.pdf')) {
-          // PDF detected
-          
-          // Check if it's a remote PDF (not a local file)
-          if (url.startsWith('http://') || url.startsWith('https://')) {
-            // Remote PDF detected, redirecting to viewer
-            
-            // Redirect to Mozilla PDF viewer
-            const pdfViewerUrl = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(url);
-            
-            // Update the current tab to the PDF viewer
-            await chrome.tabs.update(details.tabId, { url: pdfViewerUrl });
-            // PDF redirected to viewer successfully
-          } else {
-            // Local PDF file, not redirecting
-          }
-        }
-    } catch (error) {
-      // Error handling PDF redirect
-    }
-  };
-  
-  // Add the listener
-  chrome.webNavigation.onBeforeNavigate.addListener(handleBeforeNavigate);
-  // PDF redirect listener added
-}
 
 // Function to validate if text is a valid English word
 function isValidWord(text) {

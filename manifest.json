@@ -8,10 +8,7 @@
   },
   "permissions": [
     "storage",
-    "activeTab",
     "scripting",
-    "tabs",
-    "webNavigation",
     "contextMenus"
   ],
       "host_permissions": [
@@ -53,9 +50,7 @@
       "matches": ["https://*/*"]
     }
   ],
-  "chrome_url_overrides": {
-    "newtab": "src/html/newtab.html"
-  },
+
   "action": {
     "default_popup": "src/html/popup.html",
     "default_title": "Vocabulary Learning Note",

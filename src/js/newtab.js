@@ -928,7 +928,7 @@ class VocabularyBoard {
                     ${word.word}
                 </div>
                 <div class="definition ${this.allDefinitionsHidden ? 'hidden' : ''}">${word.definition}</div>
-                <!-- Example is hidden in board view for cleaner look -->
+                ${word.example ? `<div class="example ${this.allDefinitionsHidden ? 'hidden' : ''}">${word.example}</div>` : ''}
                 <div class="word-actions ${(this.allDefinitionsHidden || this.allWordsHidden) ? 'hidden' : ''}">
                     <button class="pronunciation-btn" title="Play pronunciation" data-word="${word.word}">🔊</button>
                     <button class="edit-definition-btn" title="Edit definition" data-word="${word.word}">📝</button>
@@ -1572,31 +1572,8 @@ class VocabularyBoard {
         // Today Voca 창 열기
         const todayVocaUrl = chrome.runtime.getURL('src/html/today-voca.html');
         
-        try {
-            // Try to update current tab first (uses activeTab permission)
-            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (currentTab) {
-                await chrome.tabs.update(currentTab.id, { url: todayVocaUrl });
-                console.log('Current tab updated to Today Voca');
-            } else {
-                // Fallback to creating new tab if current tab not found
-                chrome.tabs.create({
-                    url: todayVocaUrl,
-                    active: true
-                });
-            }
-        } catch (error) {
-            console.error('Error in startTodayVoca:', error);
-            // Fallback to creating new tab if update fails
-            try {
-                chrome.tabs.create({
-                    url: todayVocaUrl,
-                    active: true
-                });
-            } catch (fallbackError) {
-                console.error('Fallback tab creation also failed:', fallbackError);
-            }
-        }
+        // Open Today Voca in a new window instead of overriding current tab
+        window.open(todayVocaUrl, '_blank', 'width=1000,height=800');
     }
     
     // Quiz questions are now generated in the separate quiz window
@@ -2369,8 +2346,8 @@ class VocabularyBoard {
             url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
         }
         
-        // Open in new tab
-        chrome.tabs.create({ url: url });
+        // Open in new window
+        window.open(url, '_blank');
         
         // Clear the input
         this.urlSearchInput.value = '';
@@ -2670,31 +2647,8 @@ class VocabularyBoard {
         
         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(word + ' definition')}`;
         
-        try {
-            // Try to update current tab first (uses activeTab permission)
-            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (currentTab) {
-                await chrome.tabs.update(currentTab.id, { url: searchUrl });
-                console.log('Current tab updated successfully');
-            } else {
-                // Fallback to creating new tab if current tab not found
-                chrome.tabs.create({ url: searchUrl }, (tab) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Error creating tab:', chrome.runtime.lastError);
-                    } else {
-                        console.log('Tab created successfully:', tab.id);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error in searchWordOnline:', error);
-            // Fallback to creating new tab if update fails
-            try {
-                chrome.tabs.create({ url: searchUrl });
-            } catch (fallbackError) {
-                console.error('Fallback tab creation also failed:', fallbackError);
-            }
-        }
+        // Open search in new window instead of using tabs API
+        window.open(searchUrl, '_blank');
         
         // Reset flag after a longer delay
         setTimeout(() => {

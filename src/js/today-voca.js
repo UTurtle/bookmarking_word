@@ -1206,14 +1206,12 @@ class TodayVoca {
             words: JSON.stringify(quizWords)
         });
         
-        chrome.tabs.create({
-            url: `${quizUrl}?${quizParams.toString()}`
-        });
+        window.open(`${quizUrl}?${quizParams.toString()}`, '_blank', 'width=800,height=600');
     }
     
     goToBoard() {
         const boardUrl = chrome.runtime.getURL('src/html/newtab.html');
-        chrome.tabs.update({ url: boardUrl });
+        window.open(boardUrl, '_blank', 'width=1200,height=800');
     }
     
     handleKeyboard(event) {
